@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { IMoisCalendaireDTO, IConfigurationTolerances } from '../types';
 import { Save, ShieldAlert, Check } from 'lucide-react';
-import { VerifCapaciteTable } from '../components/VerifCapaciteTable';
 
 export const AdminPage: React.FC = () => {
   const { role } = useAuth();
@@ -357,9 +356,6 @@ export const AdminPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Section 3 : Écran de vérification des capacités */}
-      <VerifCapaciteTable anneeInitiale={selectedAnnee} />
     </div>
   );
 };

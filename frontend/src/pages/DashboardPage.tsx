@@ -195,6 +195,7 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilter }) => {
   const [annee, setAnnee] = useState<number>(new Date().getFullYear());
   const [mois, setMois] = useState<number | undefined>(undefined);
+  const [trimestre, setTrimestre] = useState<number | undefined>(undefined);
   const [population, setPopulation] = useState<'global' | 'interne' | 'externe'>('global');
   const [data, setData] = useState<ControlTowerData | null>(null);
   const [alertes, setAlertes] = useState<AlertItem[]>([]);
@@ -205,6 +206,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
   const [selectedVersionForMilestones, setSelectedVersionForMilestones] = useState<VersionItem | null>(null);
   const [selectedVersionForTickets, setSelectedVersionForTickets] = useState<VersionItem | null>(null);
   const [calendarToastMessage, setCalendarToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [calendarRefreshKey, setCalendarRefreshKey] = useState<number>(0);
 
   const showCalendarToast = (text: string, type: 'success' | 'error' = 'success') => {
     setCalendarToastMessage({ text, type });
@@ -223,10 +225,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
     });
   };
 
-  const fetchDashboardData = (anneeTarget: number, moisTarget?: number) => {
+  const fetchDashboardData = (anneeTarget: number, moisTarget?: number, trimestreTarget?: number) => {
     setLoading(true);
     let controlTowerUrl = `/api/dashboard/control-tower?annee=${anneeTarget}`;
-    if (moisTarget) {
+    if (trimestreTarget) {
+      controlTowerUrl += `&trimestre=${trimestreTarget}`;
+    } else if (moisTarget) {
       controlTowerUrl += `&mois=${moisTarget}`;
     }
 
@@ -246,8 +250,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
   };
 
   useEffect(() => {
-    fetchDashboardData(annee, mois);
-  }, [annee, mois]);
+    fetchDashboardData(annee, mois, trimestre);
+  }, [annee, mois, trimestre]);
 
   if (loading || !data) {
     return (
@@ -257,8 +261,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
     );
   }
 
-  // Préparation données histogramme empilé
-  const stackedChartData = data.moisData.map((m) => {
+  // Préparation données histogramme empilé (adapté selon année entière, trimestre ou mois)
+  const filteredMoisData = data.moisData.filter((m) => {
+    if (trimestre) {
+      const debutQ = (trimestre - 1) * 3 + 1;
+      return m.mois >= debutQ && m.mois <= debutQ + 2;
+    }
+    if (mois) {
+      return m.mois === mois;
+    }
+    return true;
+  });
+
+  const stackedChartData = filteredMoisData.map((m) => {
     const ch = m.charges[population];
     const capNette = m.capaciteNette[population];
     const totalCharge = ch.total;
@@ -457,25 +472,45 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
             {/* Sélecteur de Mois */}
             <select
               className="form-select"
-              style={{ width: '140px', padding: '6px 10px', fontSize: '0.84rem' }}
-              value={mois || ''}
-              onChange={(e) => setMois(e.target.value ? Number(e.target.value) : undefined)}
+              style={{ width: '150px', padding: '6px 10px', fontSize: '0.84rem' }}
+              value={trimestre ? `Q${trimestre}` : (mois || '')}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  setMois(undefined);
+                  setTrimestre(undefined);
+                } else if (val.startsWith('Q')) {
+                  setMois(undefined);
+                  setTrimestre(Number(val.replace('Q', '')));
+                } else {
+                  setTrimestre(undefined);
+                  setMois(Number(val));
+                }
+              }}
             >
               <option value="">Année entière</option>
-              {[
-                'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-              ].map((nomM, idx) => (
-                <option key={idx + 1} value={idx + 1}>
-                  {nomM}
-                </option>
-              ))}
+              <optgroup label="Trimestres">
+                <option value="Q1">Q1 (Janvier - Mars)</option>
+                <option value="Q2">Q2 (Avril - Juin)</option>
+                <option value="Q3">Q3 (Juillet - Septembre)</option>
+                <option value="Q4">Q4 (Octobre - Décembre)</option>
+              </optgroup>
+              <optgroup label="Mois individuels">
+                {[
+                  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+                ].map((nomM, idx) => (
+                  <option key={idx + 1} value={idx + 1}>
+                    {nomM}
+                  </option>
+                ))}
+              </optgroup>
             </select>
 
             <button
               className="btn btn-secondary"
               style={{ padding: '6px 12px', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-              onClick={() => fetchDashboardData(annee, mois)}
+              onClick={() => fetchDashboardData(annee, mois, trimestre)}
               title="Recharger les données de la Control Tower"
             >
               <RefreshCw size={14} /> Rafraîchir
@@ -495,11 +530,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
               padding: '3px 9px',
               fontSize: '0.74rem',
               borderRadius: '6px',
-              borderColor: mois === undefined ? 'rgba(6, 182, 212, 0.5)' : undefined,
-              color: mois === undefined ? '#38bdf8' : undefined,
-              background: mois === undefined ? 'rgba(6, 182, 212, 0.15)' : undefined
+              borderColor: mois === undefined && trimestre === undefined ? 'var(--primary)' : undefined,
+              color: mois === undefined && trimestre === undefined ? 'var(--primary)' : undefined,
+              background: mois === undefined && trimestre === undefined ? 'var(--primary-glow)' : undefined
             }}
-            onClick={() => setMois(undefined)}
+            onClick={() => {
+              setMois(undefined);
+              setTrimestre(undefined);
+            }}
           >
             Année {annee}
           </button>
@@ -510,35 +548,48 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
               padding: '3px 9px',
               fontSize: '0.74rem',
               borderRadius: '6px',
-              borderColor: mois === new Date().getMonth() + 1 ? 'rgba(6, 182, 212, 0.5)' : undefined,
-              color: mois === new Date().getMonth() + 1 ? '#38bdf8' : undefined,
-              background: mois === new Date().getMonth() + 1 ? 'rgba(6, 182, 212, 0.15)' : undefined
+              borderColor: mois === new Date().getMonth() + 1 && trimestre === undefined ? 'var(--primary)' : undefined,
+              color: mois === new Date().getMonth() + 1 && trimestre === undefined ? 'var(--primary)' : undefined,
+              background: mois === new Date().getMonth() + 1 && trimestre === undefined ? 'var(--primary-glow)' : undefined
             }}
-            onClick={() => setMois(new Date().getMonth() + 1)}
+            onClick={() => {
+              setTrimestre(undefined);
+              setMois(new Date().getMonth() + 1);
+            }}
           >
             ⚡ Mois en cours ({new Date().toLocaleDateString('fr-FR', { month: 'short' })})
           </button>
           {[
-            { label: 'Q1 (Jan-Mar)', startMonth: 1 },
-            { label: 'Q2 (Avr-Juin)', startMonth: 4 },
-            { label: 'Q3 (Juil-Sep)', startMonth: 7 },
-            { label: 'Q4 (Oct-Déc)', startMonth: 10 }
-          ].map((q) => (
-            <button
-              key={q.label}
-              type="button"
-              className="btn btn-secondary"
-              style={{
-                padding: '3px 9px',
-                fontSize: '0.74rem',
-                borderRadius: '6px'
-              }}
-              onClick={() => setMois(q.startMonth)}
-              title={`Zoomer sur le premier mois de ${q.label}`}
-            >
-              {q.label}
-            </button>
-          ))}
+            { num: 1, label: 'Q1 (Jan-Mar)' },
+            { num: 2, label: 'Q2 (Avr-Juin)' },
+            { num: 3, label: 'Q3 (Juil-Sep)' },
+            { num: 4, label: 'Q4 (Oct-Déc)' }
+          ].map((q) => {
+            const isQActive = trimestre === q.num;
+            return (
+              <button
+                key={q.label}
+                type="button"
+                className="btn btn-secondary"
+                style={{
+                  padding: '3px 9px',
+                  fontSize: '0.74rem',
+                  borderRadius: '6px',
+                  borderColor: isQActive ? 'var(--primary)' : undefined,
+                  color: isQActive ? 'var(--primary)' : undefined,
+                  background: isQActive ? 'var(--primary-glow)' : undefined,
+                  fontWeight: isQActive ? 700 : 500
+                }}
+                onClick={() => {
+                  setMois(undefined);
+                  setTrimestre(q.num);
+                }}
+                title={`Afficher le trimestre complet ${q.label}`}
+              >
+                {q.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -833,7 +884,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
                   <span style={{ fontWeight: 700, fontSize: '0.96rem' }}>Équilibre Stratégique RUN vs BUILD</span>
                 </div>
                 <span className="badge badge-purple" style={{ fontSize: '0.7rem' }}>
-                  {mois ? `${new Date(annee, mois - 1).toLocaleDateString('fr-FR', { month: 'long' })} ${annee}` : `Année ${annee}`}
+                  {trimestre ? `Trimestre Q${trimestre} ${annee}` : (mois ? `${new Date(annee, mois - 1).toLocaleDateString('fr-FR', { month: 'long' })} ${annee}` : `Année ${annee}`)}
                 </span>
               </div>
 
@@ -974,6 +1025,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
           <DashboardVersionsCalendar
             annee={annee}
             mois={mois}
+            trimestre={trimestre}
             onSelectMois={(m) => setMois(m)}
             onConfigureMilestones={(v) => setSelectedVersionForMilestones(v)}
             onViewTickets={(v) => setSelectedVersionForTickets(v)}
@@ -1365,6 +1417,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
         <DashboardVersionsCalendar
           annee={annee}
           mois={mois}
+          trimestre={trimestre}
+          refreshTrigger={calendarRefreshKey}
           onSelectMois={(m) => setMois(m)}
           onConfigureMilestones={(v) => setSelectedVersionForMilestones(v)}
           onViewTickets={(v) => setSelectedVersionForTickets(v)}
@@ -1388,6 +1442,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
           }
           showCalendarToast('Jalons de la version mis à jour avec succès !');
           setSelectedVersionForMilestones(null);
+          setCalendarRefreshKey((k) => k + 1);
           // Forcer le rechargement
           fetchDashboardData(annee, mois);
         }}
@@ -1401,6 +1456,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
           }
           showCalendarToast('Jalons réinitialisés');
           setSelectedVersionForMilestones(null);
+          setCalendarRefreshKey((k) => k + 1);
           fetchDashboardData(annee, mois);
         }}
       />

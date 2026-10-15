@@ -21,7 +21,8 @@ import {
   X,
   Check,
   Save,
-  AlertCircle
+  AlertCircle,
+  Calculator
 } from 'lucide-react';
 import { RessourceCalendarModal } from '../components/RessourceCalendarModal';
 import { PicsAbsencesWidget } from '../components/PicsAbsencesWidget';
@@ -29,6 +30,7 @@ import { groupConsecutiveAbsences, formatAbsenceRangeLabel } from '../utils/abse
 import { getAbsenceHeatmapStyle } from '../utils/heatmap';
 import { RessourceProjetsView } from '../components/RessourceProjetsView';
 import { WorkspaceManager } from '../components/WorkspaceManager';
+import { VerifCapaciteTable } from '../components/VerifCapaciteTable';
 
 export const RessourcesPage: React.FC = () => {
   const { role } = useAuth();
@@ -36,7 +38,7 @@ export const RessourcesPage: React.FC = () => {
   const isReadOnly = role === 'Lecteur';
 
   // Navigation sous-onglets
-  const [activeSubTab, setActiveSubTab] = useState<'referentiel' | 'absences' | 'projets'>('referentiel');
+  const [activeSubTab, setActiveSubTab] = useState<'referentiel' | 'absences' | 'projets' | 'capacites'>('referentiel');
 
   const [ressources, setRessources] = useState<IRessource[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -308,6 +310,14 @@ export const RessourcesPage: React.FC = () => {
             >
               <Briefcase size={15} /> Projets & Affectations
             </button>
+
+            <button
+              className={`btn ${activeSubTab === 'capacites' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '6px 14px', fontSize: '0.84rem', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => setActiveSubTab('capacites')}
+            >
+              <Calculator size={15} /> Capacités Mensuelles
+            </button>
           </div>
 
           {!isReadOnly && activeSubTab === 'referentiel' && (
@@ -423,7 +433,7 @@ export const RessourcesPage: React.FC = () => {
       </div>
 
       {/* Barre de Filtres Avancés & Workspaces */}
-      {activeSubTab !== 'projets' && (
+      {activeSubTab !== 'projets' && activeSubTab !== 'capacites' && (
         <div className="card" style={{ padding: '14px 20px', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', justifyContent: 'space-between' }}>
             
@@ -1314,6 +1324,11 @@ export const RessourcesPage: React.FC = () => {
         <RessourceProjetsView annee={absAnnee} />
       )}
 
+      {/* ONGLET 4 : Vérification des Capacités Mensuelles */}
+      {activeSubTab === 'capacites' && (
+        <VerifCapaciteTable anneeInitiale={absAnnee} />
+      )}
+
       {/* Modal Calendrier & Planning de la ressource */}
       {selectedRessourceDetails && (
         <RessourceCalendarModal
@@ -1334,8 +1349,8 @@ export const RessourcesPage: React.FC = () => {
               width: '95%',
               padding: 0,
               background: 'linear-gradient(165deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 17, 32, 0.99) 100%)',
-              border: '1px solid rgba(6, 182, 212, 0.35)',
-              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(6, 182, 212, 0.18)',
+              border: '1px solid rgba(249, 115, 22, 0.45)',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(249, 115, 22, 0.22)',
               borderRadius: '16px',
               overflow: 'hidden'
             }}
@@ -1345,7 +1360,7 @@ export const RessourcesPage: React.FC = () => {
               style={{
                 padding: '20px 24px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                background: 'linear-gradient(90deg, rgba(6, 182, 212, 0.12) 0%, rgba(59, 130, 246, 0.05) 50%, transparent 100%)',
+                background: 'linear-gradient(90deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 88, 12, 0.05) 50%, transparent 100%)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -1587,9 +1602,9 @@ export const RessourcesPage: React.FC = () => {
                                 padding: '4px 8px',
                                 fontSize: '0.72rem',
                                 fontWeight: formData.tauxActivite === val ? 700 : 500,
-                                background: formData.tauxActivite === val ? 'rgba(6, 182, 212, 0.25)' : undefined,
-                                borderColor: formData.tauxActivite === val ? '#06b6d4' : undefined,
-                                color: formData.tauxActivite === val ? '#38bdf8' : 'var(--text-muted)'
+                                background: formData.tauxActivite === val ? 'rgba(249, 115, 22, 0.25)' : undefined,
+                                borderColor: formData.tauxActivite === val ? 'var(--primary)' : undefined,
+                                color: formData.tauxActivite === val ? '#f97316' : 'var(--text-muted)'
                               }}
                               onClick={() => setFormData({ ...formData, tauxActivite: val })}
                             >
@@ -1778,7 +1793,7 @@ export const RessourcesPage: React.FC = () => {
                     borderRadius: '8px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
-                    boxShadow: '0 4px 16px rgba(6, 182, 212, 0.35)',
+                    boxShadow: '0 4px 16px rgba(249, 115, 22, 0.35)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px'

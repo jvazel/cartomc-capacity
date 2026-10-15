@@ -33,6 +33,7 @@ export const VersionsPage: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [projectKey, setProjectKey] = useState<string>('GTEP');
   const [filterReleased, setFilterReleased] = useState<'unreleased' | 'released' | 'all' | 'unassigned'>('unreleased');
+  const [filterEmptyVersions, setFilterEmptyVersions] = useState<'with_tickets' | 'empty_only' | 'all'>('with_tickets');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'cards' | 'calendar' | 'reports'>('cards');
   const [sortBy, setSortBy] = useState<'default' | 'inProgress_desc' | 'inProgress_asc' | 'totalTickets_desc' | 'anomalies_desc' | 'name_asc'>('default');
@@ -142,10 +143,24 @@ export const VersionsPage: React.FC = () => {
     loadVersions();
   };
 
-  // Filtrage local texte
-  let filteredVersions = versions.filter((v) =>
-    v.versionName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtrage local texte et tickets associés
+  let filteredVersions = versions.filter((v) => {
+    // Filtre texte
+    if (!v.versionName.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+
+    // Filtre présence de tickets Jira
+    const count = v.metrics?.totalTickets || 0;
+    if (filterEmptyVersions === 'with_tickets' && count === 0) {
+      return false;
+    }
+    if (filterEmptyVersions === 'empty_only' && count > 0) {
+      return false;
+    }
+
+    return true;
+  });
 
   // Date pivot d'aujourd'hui (début de journée) pour ordonner les échéances MEP
   const startOfToday = new Date();
@@ -214,7 +229,7 @@ export const VersionsPage: React.FC = () => {
   // Reset page à 1 lors du changement de filtre, tri, recherche ou taille de page
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterReleased, searchQuery, sortBy, pageSize]);
+  }, [filterReleased, filterEmptyVersions, searchQuery, sortBy, pageSize]);
 
   // Pagination calculée
   const totalPages = Math.max(1, Math.ceil(filteredVersions.length / pageSize));
@@ -228,6 +243,9 @@ export const VersionsPage: React.FC = () => {
   const totalTickets = versions.reduce((sum, v) => sum + (v.metrics?.totalTickets || 0), 0);
   const totalInProgress = versions.reduce((sum, v) => sum + (v.metrics?.inProgress || 0), 0);
   const totalADecaler = versions.reduce((sum, v) => sum + (v.metrics?.anomalies?.aDecaler || 0), 0);
+
+  const versionsWithTicketsCount = versions.filter((v) => (v.metrics?.totalTickets || 0) > 0).length;
+  const emptyVersionsCount = versions.length - versionsWithTicketsCount;
 
   return (
     <main className="main-content">
@@ -329,9 +347,9 @@ export const VersionsPage: React.FC = () => {
               <Rocket size={22} />
             </div>
             <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Versions dans la vue</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Versions affichées</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-                {versions.length}
+                {filteredVersions.length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-muted)' }}>/ {versions.length}</span>
               </div>
             </div>
           </div>
@@ -660,8 +678,67 @@ export const VersionsPage: React.FC = () => {
               }}
               title="Voir la liste complète des tickets Jira sans version"
             >
-              ⚠️ Sans version ({unassignedTicketsCount})
+              ⚠️ Tickets sans version ({unassignedTicketsCount})
             </button>
+          </div>
+
+          {/* Filtre Présence de Tickets Jira (Cachées par défaut si 0 ticket) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '6px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              Tickets associés :
+            </span>
+            <div
+              style={{
+                display: 'inline-flex',
+                padding: '4px',
+                borderRadius: 'var(--radius)',
+                backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                border: '1px solid var(--border-color)'
+              }}
+            >
+              <button
+                onClick={() => setFilterEmptyVersions('with_tickets')}
+                className={`btn ${filterEmptyVersions === 'with_tickets' ? 'btn-primary' : ''}`}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  color: filterEmptyVersions === 'with_tickets' ? '#ffffff' : 'var(--text-muted)'
+                }}
+                title="Afficher uniquement les versions ayant au moins un ticket Jira"
+              >
+                Avec tickets ({versionsWithTicketsCount})
+              </button>
+              <button
+                onClick={() => setFilterEmptyVersions('empty_only')}
+                className={`btn ${filterEmptyVersions === 'empty_only' ? 'btn-primary' : ''}`}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  color: filterEmptyVersions === 'empty_only' ? '#ffffff' : 'var(--text-muted)'
+                }}
+                title="Afficher uniquement les versions sans aucun ticket Jira"
+              >
+                Sans ticket ({emptyVersionsCount})
+              </button>
+              <button
+                onClick={() => setFilterEmptyVersions('all')}
+                className={`btn ${filterEmptyVersions === 'all' ? 'btn-primary' : ''}`}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  color: filterEmptyVersions === 'all' ? '#ffffff' : 'var(--text-muted)'
+                }}
+                title="Afficher toutes les versions (avec et sans tickets)"
+              >
+                Toutes ({versions.length})
+              </button>
+            </div>
           </div>
         </div>
 

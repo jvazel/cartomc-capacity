@@ -118,25 +118,31 @@ export interface IWeekOption {
 }
 
 export const getWeeksForMonth = (annee: number, mois: number): IWeekOption[] => {
-  const nbJoursDansMois = new Date(annee, mois, 0).getDate();
+  const daysInMonth = new Date(annee, mois, 0).getDate();
   const nomMoisCourt = NOMS_MOIS_COURTS[mois - 1];
 
-  const tranches = [
-    { start: 1, end: 7, refDay: 4 },
-    { start: 8, end: 14, refDay: 11 },
-    { start: 15, end: 21, refDay: 18 },
-    { start: 22, end: 28, refDay: 25 },
-    ...(nbJoursDansMois > 28 ? [{ start: 29, end: nbJoursDansMois, refDay: Math.min(29, nbJoursDansMois) }] : [])
-  ];
+  const weekGroups: { [weekNum: number]: { weekNum: number; days: number[] } } = {};
+  const orderedWeekNums: number[] = [];
 
-  return tranches.map((t) => {
-    const refDate = new Date(annee, mois - 1, t.refDay);
-    const isoWeekNum = getISOWeekNumber(refDate);
+  for (let day = 1; day <= daysInMonth; day++) {
+    const curDate = new Date(annee, mois - 1, day);
+    const wNum = getISOWeekNumber(curDate);
+    if (!weekGroups[wNum]) {
+      weekGroups[wNum] = { weekNum: wNum, days: [] };
+      orderedWeekNums.push(wNum);
+    }
+    weekGroups[wNum].days.push(day);
+  }
+
+  return orderedWeekNums.map((wNum) => {
+    const group = weekGroups[wNum];
+    const startDay = group.days[0];
+    const endDay = group.days[group.days.length - 1];
     return {
-      semaine: isoWeekNum,
-      label: `S${isoWeekNum} (${t.start}-${t.end} ${nomMoisCourt})`,
-      startDay: t.start,
-      endDay: t.end
+      semaine: wNum,
+      label: `S${wNum} (${startDay}-${endDay} ${nomMoisCourt})`,
+      startDay,
+      endDay
     };
   });
 };

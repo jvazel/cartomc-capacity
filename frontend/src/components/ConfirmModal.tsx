@@ -102,14 +102,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           iconBg: 'rgba(59, 130, 246, 0.15)'
         };
       default:
-        // Electric cyan primary
+        // Vibrant orange primary
         return {
-          glowColor: 'rgba(6, 182, 212, 0.3)',
-          borderColor: 'rgba(6, 182, 212, 0.5)',
+          glowColor: 'rgba(249, 115, 22, 0.3)',
+          borderColor: 'rgba(249, 115, 22, 0.5)',
           btnBg: 'var(--primary)',
           btnHover: 'var(--primary-hover)',
           iconColor: 'var(--primary)',
-          iconBg: 'rgba(6, 182, 212, 0.15)'
+          iconBg: 'rgba(249, 115, 22, 0.15)'
         };
     }
   };

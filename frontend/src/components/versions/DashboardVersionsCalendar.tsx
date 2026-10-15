@@ -27,10 +27,12 @@ interface VersionMilestoneEvent {
 interface DashboardVersionsCalendarProps {
   annee: number;
   mois?: number; // 1-12 or undefined (year view)
+  trimestre?: number; // 1-4 or undefined
   onConfigureMilestones?: (version: VersionItem) => void;
   onViewTickets?: (version: VersionItem) => void;
   projectKey?: string;
   onSelectMois?: (mois: number | undefined) => void;
+  refreshTrigger?: number;
 }
 
 // Calcul du numéro de semaine ISO-8601
@@ -59,9 +61,11 @@ const MILESTONE_DEFS = [
 export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps> = ({
   annee,
   mois,
+  trimestre,
   onConfigureMilestones,
   onViewTickets,
-  onSelectMois
+  onSelectMois,
+  refreshTrigger
 }) => {
   const [versions, setVersions] = useState<VersionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -77,9 +81,10 @@ export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps>
         if (!res.ok) throw new Error('Erreur chargement versions');
         return res.json();
       })
-      .then((data: VersionItem[]) => {
+      .then((data: any) => {
         if (isMounted) {
-          setVersions(Array.isArray(data) ? data : []);
+          const list = Array.isArray(data) ? data : (data && Array.isArray(data.versions) ? data.versions : []);
+          setVersions(list);
           setLoading(false);
         }
       })
@@ -91,7 +96,74 @@ export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps>
     return () => {
       isMounted = false;
     };
-  }, [annee]);
+  }, [annee, refreshTrigger]);
+
+  // Tri des versions identique à l'ordre par défaut de la page Suivi des versions :
+  // Jalons MEP chronologiques à partir d'aujourd'hui (futures en 1er, passées reléguées en bas, sans date à la fin)
+  const sortedVersions = React.useMemo(() => {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayTime = startOfToday.getTime();
+
+    const getMepTimestamp = (v: VersionItem): number | null => {
+      const raw = v.dateMEP || v.jiraReleaseDate;
+      if (!raw) return null;
+      const t = new Date(raw).getTime();
+      return isNaN(t) ? null : t;
+    };
+
+    return [...versions].sort((a, b) => {
+      const timeA = getMepTimestamp(a);
+      const timeB = getMepTimestamp(b);
+
+      if (timeA === null && timeB === null) {
+        return a.versionName.localeCompare(b.versionName, undefined, { numeric: true });
+      }
+      if (timeA === null) return 1;
+      if (timeB === null) return -1;
+
+      const isAFuture = timeA >= startOfTodayTime;
+      const isBFuture = timeB >= startOfTodayTime;
+
+      // 1. Les dates à venir (>= aujourd'hui) sont prioritaires sur les dates passées
+      if (isAFuture && !isBFuture) return -1;
+      if (!isAFuture && isBFuture) return 1;
+
+      // 2. Si les deux sont à venir : ordre chronologique ascendant (la plus proche en premier)
+      if (isAFuture && isBFuture) {
+        if (timeA !== timeB) return timeA - timeB;
+        return a.versionName.localeCompare(b.versionName, undefined, { numeric: true });
+      }
+
+      // 3. Si les deux sont passées (< aujourd'hui) : les plus récentes passées en premier
+      if (timeA !== timeB) return timeB - timeA;
+      return a.versionName.localeCompare(b.versionName, undefined, { numeric: true });
+    });
+  }, [versions]);
+
+  // Extraction robuste des composants année, mois, jour pour éviter les décalages UTC/fuseau
+  const parseLocalDate = (dateVal: any): { year: number; month: number; day: number; dateStr: string } | null => {
+    if (!dateVal) return null;
+    if (typeof dateVal === 'string') {
+      const match = dateVal.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        return {
+          year: parseInt(match[1], 10),
+          month: parseInt(match[2], 10) - 1, // 0-11
+          day: parseInt(match[3], 10),
+          dateStr: `${match[1]}-${match[2]}-${match[3]}`
+        };
+      }
+    }
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return null;
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      day: d.getDate(),
+      dateStr: d.toISOString().split('T')[0]
+    };
+  };
 
   // Extraction de tous les jalons de toutes les versions
   const allEvents: VersionMilestoneEvent[] = [];
@@ -103,13 +175,13 @@ export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps>
 
       const rawDate = (v as any)[mDef.key] || (mDef.key === 'dateMEP' ? v.jiraReleaseDate : null);
       if (rawDate) {
-        const d = new Date(rawDate);
-        if (!isNaN(d.getTime())) {
+        const parsed = parseLocalDate(rawDate);
+        if (parsed) {
           allEvents.push({
-            dateStr: d.toISOString().split('T')[0],
-            day: d.getDate(),
-            month: d.getMonth(), // 0..11
-            year: d.getFullYear(),
+            dateStr: parsed.dateStr,
+            day: parsed.day,
+            month: parsed.month, // 0..11
+            year: parsed.year,
             version: v,
             milestoneType: mDef.key,
             label: mDef.label,
@@ -120,10 +192,14 @@ export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps>
     });
   });
 
-  // Événements filtrés selon l'année et éventuellement le mois
+  // Événements filtrés selon l'année, le trimestre ou le mois
   const currentPeriodEvents = allEvents.filter((ev) => {
     if (ev.year !== annee) return false;
     if (mois !== undefined && ev.month !== mois - 1) return false;
+    if (trimestre !== undefined) {
+      const startM = (trimestre - 1) * 3;
+      if (ev.month < startM || ev.month > startM + 2) return false;
+    }
     return true;
   });
 
@@ -535,7 +611,7 @@ export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps>
             onChange={(e) => setSelectedVersionId(e.target.value)}
           >
             <option value="all">Toutes versions</option>
-            {versions.map((v) => (
+            {sortedVersions.map((v) => (
               <option key={v._id} value={v._id}>
                 {v.versionName}
               </option>
@@ -611,7 +687,7 @@ export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps>
         })}
       </div>
 
-      {/* Contenu Calendrier selon la sélection utilisateur (Mois unique vs Année entière) */}
+      {/* Contenu Calendrier selon la sélection utilisateur (Mois unique vs Trimestre vs Année entière) */}
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           Chargement des jalons de versions...
@@ -620,6 +696,17 @@ export const DashboardVersionsCalendar: React.FC<DashboardVersionsCalendarProps>
         // VUE MOIS SÉLECTIONNÉ
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {renderMonthGrid(mois - 1, false)}
+        </div>
+      ) : trimestre !== undefined ? (
+        // VUE TRIMESTRE SÉLECTIONNÉ : 3 mois du trimestre
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '16px'
+          }}
+        >
+          {[0, 1, 2].map((offset) => renderMonthGrid((trimestre - 1) * 3 + offset, false))}
         </div>
       ) : (
         // VUE ANNÉE ENTIÈRE : Grille responsive 12 mois

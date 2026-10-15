@@ -247,7 +247,6 @@ export const PlanningRessourcesGantt: React.FC<PlanningRessourcesGanttProps> = (
   // Configuration dynamique des périodes (Mois ou Semaines du mois sélectionné) - DOIT ÊTRE AVANT TOUT RETURN CONDITIONNEL (Rules of Hooks)
   const periodesPlanning = React.useMemo(() => {
     if (granularite === 'semaine') {
-      const nbJoursDansMois = new Date(annee, moisFocusSemaine, 0).getDate();
       const nomMoisCourt = NOMS_MOIS_COURTS[moisFocusSemaine - 1];
 
       const getISOWeekNumber = (date: Date): number => {
@@ -262,27 +261,34 @@ export const PlanningRessourcesGantt: React.FC<PlanningRessourcesGanttProps> = (
         return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
       };
 
-      const tranches = [
-        { start: 1, end: 7, refDay: 4 },
-        { start: 8, end: 14, refDay: 11 },
-        { start: 15, end: 21, refDay: 18 },
-        { start: 22, end: 28, refDay: 25 },
-        ...(nbJoursDansMois > 28 ? [{ start: 29, end: nbJoursDansMois, refDay: Math.min(29, nbJoursDansMois) }] : [])
-      ];
+      const daysInMonth = new Date(annee, moisFocusSemaine, 0).getDate();
+      const weekGroups: { [weekNum: number]: { weekNum: number; days: number[] } } = {};
+      const orderedWeekNums: number[] = [];
 
-      const totalTranches = tranches.length;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const curDate = new Date(annee, moisFocusSemaine - 1, day);
+        const wNum = getISOWeekNumber(curDate);
+        if (!weekGroups[wNum]) {
+          weekGroups[wNum] = { weekNum: wNum, days: [] };
+          orderedWeekNums.push(wNum);
+        }
+        weekGroups[wNum].days.push(day);
+      }
 
-      return tranches.map((t, idx) => {
-        const refDate = new Date(annee, moisFocusSemaine - 1, t.refDay);
-        const isoWeekNum = getISOWeekNumber(refDate);
+      return orderedWeekNums.map((wNum, idx) => {
+        const group = weekGroups[wNum];
+        const startDay = group.days[0];
+        const endDay = group.days[group.days.length - 1];
 
         return {
-          key: `W_${moisFocusSemaine}_${isoWeekNum}_${idx}`,
-          label: `S${isoWeekNum} (${t.start}-${t.end} ${nomMoisCourt})`,
+          key: `W_${moisFocusSemaine}_${wNum}_${idx}`,
+          label: `S${wNum} (${startDay}-${endDay} ${nomMoisCourt})`,
           mois: moisFocusSemaine,
           isWeek: true,
-          weekFraction: 1 / totalTranches,
-          weekNum: isoWeekNum
+          weekFraction: group.days.length / daysInMonth,
+          weekNum: wNum,
+          startDay,
+          endDay
         };
       });
     }

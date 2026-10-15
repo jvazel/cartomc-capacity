@@ -19,10 +19,10 @@ export function categorizeJiraStatus(statusName: string = ''): 'todo' | 'inprogr
   if (['in review', 'en revue', 'revue', 'code review', 'technical validation', 'tech validation', 'validation technique', 'validation tech', 'mr', 'pr open', 'merge request', 'waiting review'].includes(s)) {
     return 'review';
   }
-  if (['recette', 'en recette', 'qa', 'testing', 'en test', 'test', 'uat', 'recette en cours'].includes(s)) {
+  if (['recette', 'en recette', 'qa', 'testing', 'en test', 'test', 'uat', 'recette en cours', 'ready to test', 'prêt pour test', 'pret pour test', 'ready for test', 'tests qlf', 'test qlf', 'qlf', 'en qlf'].includes(s)) {
     return 'qa';
   }
-  if (['terminé', 'termine', 'fini', 'done', 'closed', 'fermé', 'ferme', 'résolu', 'resolu', 'resolved', 'livré', 'livre', 'en prod', 'prêt pour prod'].includes(s)) {
+  if (['terminé', 'termine', 'fini', 'done', 'closed', 'fermé', 'ferme', 'résolu', 'resolu', 'resolved', 'livré', 'livre', 'en prod', 'prêt pour prod', 'awaiting prod integration', 'en attente mep', 'en attente de mep', 'en attente prod'].includes(s)) {
     return 'done';
   }
   return 'other';

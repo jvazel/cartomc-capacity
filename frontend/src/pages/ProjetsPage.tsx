@@ -1575,8 +1575,8 @@ export const ProjetsPage: React.FC<ProjetsPageProps> = ({
               width: '95%',
               padding: 0,
               background: 'linear-gradient(165deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 17, 32, 0.99) 100%)',
-              border: '1px solid rgba(6, 182, 212, 0.35)',
-              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(6, 182, 212, 0.18)',
+              border: '1px solid rgba(249, 115, 22, 0.45)',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(249, 115, 22, 0.22)',
               borderRadius: '16px',
               overflow: 'hidden'
             }}
@@ -1586,7 +1586,7 @@ export const ProjetsPage: React.FC<ProjetsPageProps> = ({
               style={{
                 padding: '20px 24px 16px 24px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                background: 'linear-gradient(90deg, rgba(6, 182, 212, 0.12) 0%, rgba(59, 130, 246, 0.05) 50%, transparent 100%)',
+                background: 'linear-gradient(90deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 88, 12, 0.05) 50%, transparent 100%)',
                 position: 'relative'
               }}
             >
@@ -1597,13 +1597,13 @@ export const ProjetsPage: React.FC<ProjetsPageProps> = ({
                       width: '42px',
                       height: '42px',
                       borderRadius: '10px',
-                      background: 'rgba(6, 182, 212, 0.15)',
-                      border: '1px solid rgba(6, 182, 212, 0.4)',
+                      background: 'rgba(249, 115, 22, 0.15)',
+                      border: '1px solid rgba(249, 115, 22, 0.4)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'var(--primary)',
-                      boxShadow: '0 0 15px rgba(6, 182, 212, 0.25)'
+                      boxShadow: '0 0 15px rgba(249, 115, 22, 0.25)'
                     }}
                   >
                     <FolderKanban size={22} />
@@ -1708,9 +1708,9 @@ export const ProjetsPage: React.FC<ProjetsPageProps> = ({
                         borderRadius: '8px',
                         fontSize: '0.82rem',
                         fontWeight: isActive ? 700 : 500,
-                        border: isActive ? '1px solid rgba(6, 182, 212, 0.5)' : '1px solid transparent',
-                        background: isActive ? 'rgba(6, 182, 212, 0.18)' : 'transparent',
-                        color: isActive ? '#38bdf8' : 'var(--text-muted)',
+                        border: isActive ? '1px solid rgba(249, 115, 22, 0.6)' : '1px solid transparent',
+                        background: isActive ? 'rgba(249, 115, 22, 0.2)' : 'transparent',
+                        color: isActive ? '#f97316' : 'var(--text-muted)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -1726,7 +1726,7 @@ export const ProjetsPage: React.FC<ProjetsPageProps> = ({
                             fontSize: '0.68rem',
                             padding: '1px 5px',
                             borderRadius: '10px',
-                            background: isActive ? 'rgba(6, 182, 212, 0.35)' : 'rgba(255, 255, 255, 0.08)',
+                            background: isActive ? 'rgba(249, 115, 22, 0.4)' : 'rgba(255, 255, 255, 0.08)',
                             color: isActive ? '#ffffff' : 'var(--text-muted)',
                             fontFamily: 'var(--font-mono)'
                           }}
@@ -1932,8 +1932,8 @@ export const ProjetsPage: React.FC<ProjetsPageProps> = ({
                     <div
                       style={{
                         padding: '14px 18px',
-                        background: 'rgba(6, 182, 212, 0.08)',
-                        border: '1px solid rgba(6, 182, 212, 0.25)',
+                        background: 'rgba(249, 115, 22, 0.08)',
+                        border: '1px solid rgba(249, 115, 22, 0.3)',
                         borderRadius: '10px',
                         display: 'flex',
                         alignItems: 'center',
@@ -2326,7 +2326,7 @@ export const ProjetsPage: React.FC<ProjetsPageProps> = ({
                     borderRadius: '8px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
-                    boxShadow: '0 4px 16px rgba(6, 182, 212, 0.35)',
+                    boxShadow: '0 4px 16px rgba(249, 115, 22, 0.35)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px'

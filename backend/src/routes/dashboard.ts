@@ -66,10 +66,28 @@ router.get('/control-tower', async (req, res) => {
     const ecartMoyenB0B1Pct = nbEcartsProjets > 0 ? Number(((sumEcartsPct / nbEcartsProjets) * 100).toFixed(1)) : 0;
 
     // 2. Calcul des séries mensuelles par mois (1 à 12)
+    // Support du filtrage par mois unique ou par trimestre (1 à 4 couvrant 3 mois)
     const moisFiltre = req.query.mois ? parseInt(req.query.mois as string, 10) : undefined;
+    const trimestreFiltre = req.query.trimestre ? parseInt(req.query.trimestre as string, 10) : undefined;
+    const moisDebutFiltre = req.query.moisDebut ? parseInt(req.query.moisDebut as string, 10) : undefined;
+    const moisFinFiltre = req.query.moisFin ? parseInt(req.query.moisFin as string, 10) : undefined;
+
+    let moisCibles: number[] | null = null;
+    if (trimestreFiltre && trimestreFiltre >= 1 && trimestreFiltre <= 4) {
+      const debutQ = (trimestreFiltre - 1) * 3 + 1;
+      moisCibles = [debutQ, debutQ + 1, debutQ + 2];
+    } else if (moisDebutFiltre && moisFinFiltre) {
+      moisCibles = [];
+      for (let m = moisDebutFiltre; m <= moisFinFiltre; m++) {
+        moisCibles.push(m);
+      }
+    } else if (moisFiltre && moisFiltre >= 1 && moisFiltre <= 12) {
+      moisCibles = [moisFiltre];
+    }
+
     const moisData = [];
 
-    // Répartition (annuelle globale ou ciblée sur le mois filtré) des charges planifiées
+    // Répartition (annuelle globale, trimestrielle ou ciblée sur le mois filtré) des charges planifiées
     let repartitionRunBuild = { RUN: 0, BUILD: 0 };
     let repartitionPriorite = { P0: 0, P1: 0, P2: 0, P3: 0, P4: 0, NC: 0 };
 
@@ -120,8 +138,8 @@ router.get('/control-tower', async (req, res) => {
         charges.global[category] += jt;
         charges.global.total += jt;
 
-        // Cumuler pour les camemberts (si aucun mois filtré => toute l'année, sinon seulement le mois ciblé)
-        const doitCumuler = !moisFiltre || moisFiltre === m;
+        // Cumuler pour les camemberts (si période filtrée => uniquement les mois ciblés, sinon toute l'année)
+        const doitCumuler = !moisCibles || moisCibles.includes(m);
         if (doitCumuler) {
           if (p.type === 'RUN') {
             repartitionRunBuild.RUN += jt;
@@ -279,10 +297,12 @@ router.get('/control-tower', async (req, res) => {
     // 4. Ratio Équilibre RUN vs BUILD (Planifié & Réel Tempo)
     const categoriesRunList = (config?.categoriesRun || ['MCO', 'Evol Technique']).map((c: string) => c.toLowerCase().trim());
 
-    // Calcul Réel Tempo (annuel ou mois filtré)
+    // Calcul Réel Tempo (annuel, trimestriel ou mois filtré)
     const matchTempoQuery: any = { year: annee };
-    if (moisFiltre && moisFiltre >= 1 && moisFiltre <= 12) {
-      matchTempoQuery.month = moisFiltre;
+    if (moisCibles && moisCibles.length === 1) {
+      matchTempoQuery.month = moisCibles[0];
+    } else if (moisCibles && moisCibles.length > 1) {
+      matchTempoQuery.month = { $in: moisCibles };
     }
 
     const allWorklogsTempo = await TempoWorklog.find(matchTempoQuery);
@@ -404,26 +424,61 @@ router.get('/control-tower', async (req, res) => {
     totalPlanifieInterneAnnee = Number(totalPlanifieInterneAnnee.toFixed(1));
     totalPlanifieExterneAnnee = Number(totalPlanifieExterneAnnee.toFixed(1));
 
-    // Si un mois précis est filtré, calcul ciblé sur ce mois
-    const moisCibleKpi = moisFiltre && moisFiltre >= 1 && moisFiltre <= 12 ? moisFiltre : (isCurrentAnnee ? currentMois : 1);
-    const donneesMoisCible = trajectoireStaffing12Mois.find((t) => t.mois === moisCibleKpi) || trajectoireStaffing12Mois[0];
+    // Si un mois ou un trimestre précis est filtré, calcul ciblé sur cette sélection
+    let planifieRef = totalPlanifieAnnee;
+    let affecteRef = totalAffecteAnnee;
+    let affecteInterneRef = totalAffecteInterneAnnee;
+    let affecteExterneRef = totalAffecteExterneAnnee;
+    let planifieInterneRef = totalPlanifieInterneAnnee;
+    let planifieExterneRef = totalPlanifieExterneAnnee;
+    let consommeTempoRef = 0;
 
-    const planifieRef = moisFiltre ? donneesMoisCible.planifieTotal : totalPlanifieAnnee;
-    const affecteRef = moisFiltre ? donneesMoisCible.affecteTotal : totalAffecteAnnee;
-    const affecteInterneRef = moisFiltre ? donneesMoisCible.affecteInterne : totalAffecteInterneAnnee;
-    const affecteExterneRef = moisFiltre ? donneesMoisCible.affecteExterne : totalAffecteExterneAnnee;
-    const planifieInterneRef = moisFiltre ? (ventilations.filter(v => v.mois === moisFiltre).reduce((acc, v) => acc + (v.joursInternes || 0), 0)) : totalPlanifieInterneAnnee;
-    const planifieExterneRef = moisFiltre ? (ventilations.filter(v => v.mois === moisFiltre).reduce((acc, v) => acc + (v.joursExternes || 0), 0)) : totalPlanifieExterneAnnee;
+    if (moisCibles && moisCibles.length > 0) {
+      planifieRef = 0;
+      affecteRef = 0;
+      affecteInterneRef = 0;
+      affecteExterneRef = 0;
+      planifieInterneRef = 0;
+      planifieExterneRef = 0;
+
+      trajectoireStaffing12Mois.filter((t) => moisCibles!.includes(t.mois)).forEach((t) => {
+        planifieRef += t.planifieTotal;
+        affecteRef += t.affecteTotal;
+        affecteInterneRef += t.affecteInterne;
+        affecteExterneRef += t.affecteExterne;
+        if (t.consommeTempo !== null) {
+          consommeTempoRef += t.consommeTempo;
+        }
+      });
+
+      ventilations.filter((v) => moisCibles!.includes(v.mois)).forEach((v) => {
+        planifieInterneRef += (v.joursInternes || 0);
+        planifieExterneRef += (v.joursExternes || 0);
+      });
+    } else {
+      const moisCibleKpi = isCurrentAnnee ? currentMois : 1;
+      const donneesMoisCible = trajectoireStaffing12Mois.find((t) => t.mois === moisCibleKpi) || trajectoireStaffing12Mois[0];
+      consommeTempoRef = donneesMoisCible?.consommeTempo ?? 0;
+    }
+
+    planifieRef = Number(planifieRef.toFixed(1));
+    affecteRef = Number(affecteRef.toFixed(1));
+    affecteInterneRef = Number(affecteInterneRef.toFixed(1));
+    affecteExterneRef = Number(affecteExterneRef.toFixed(1));
+    planifieInterneRef = Number(planifieInterneRef.toFixed(1));
+    planifieExterneRef = Number(planifieExterneRef.toFixed(1));
+    consommeTempoRef = Number(consommeTempoRef.toFixed(1));
+
+    const reserveRef = Number((planifieRef - affecteRef).toFixed(1));
 
     const tauxCouvertureNominativePct = planifieRef > 0 ? Number(((affecteRef / planifieRef) * 100).toFixed(0)) : 100;
     const tauxCouvertureInternePct = planifieInterneRef > 0 ? Number(((affecteInterneRef / planifieInterneRef) * 100).toFixed(0)) : 100;
     const tauxCouvertureExternePct = planifieExterneRef > 0 ? Number(((affecteExterneRef / planifieExterneRef) * 100).toFixed(0)) : 100;
 
-    // Écart Affecté vs Réel Tempo sur le mois cible (ou à date)
-    const consommeTempoRef = donneesMoisCible.consommeTempo ?? 0;
-    const ecartAffecteTempoJours = Number((consommeTempoRef - donneesMoisCible.affecteTotal).toFixed(1));
-    const ecartAffecteTempoPct = donneesMoisCible.affecteTotal > 0
-      ? Number(((ecartAffecteTempoJours / donneesMoisCible.affecteTotal) * 100).toFixed(1))
+    // Écart Affecté vs Réel Tempo sur la période ciblée
+    const ecartAffecteTempoJours = Number((consommeTempoRef - affecteRef).toFixed(1));
+    const ecartAffecteTempoPct = affecteRef > 0
+      ? Number(((ecartAffecteTempoJours / affecteRef) * 100).toFixed(1))
       : 0;
 
     res.json({
@@ -482,8 +537,13 @@ router.get('/control-tower', async (req, res) => {
           ecartAffecteTempoJours,
           ecartAffecteTempoPct,
           consommeTempoMois: consommeTempoRef,
-          moisCible: moisCibleKpi,
-          nomMoisCible: donneesMoisCible.nomMois
+          moisCible: moisCibles && moisCibles.length === 1 ? moisCibles[0] : null,
+          moisCibles: moisCibles || null,
+          nomMoisCible: moisCibles && moisCibles.length === 1
+            ? (trajectoireStaffing12Mois.find((t) => t.mois === moisCibles[0])?.nomMois || `Mois ${moisCibles[0]}`)
+            : (moisCibles && moisCibles.length > 1
+              ? `Trimestre (M${moisCibles.join(', M')})`
+              : 'Année entière')
         }
       },
       trajectoireStaffing12Mois,
@@ -810,7 +870,7 @@ router.get('/alertes', async (req, res) => {
         // Capacité nette du mois
         const capM = capaciteMensuelle.find((c) => c.mois === m);
         const jOuvresMois = capM ? (isInterne ? capM.interne.joursOuvres : capM.externe.joursOuvres) : 21;
-        const capNetteRessource = Math.max(1, jOuvresMois * (r.tempsTravailPct / 100));
+        const capNetteRessource = Math.max(1, jOuvresMois * (r.tauxActivite ?? 1));
 
         if (totalJoursAffectes > capNetteRessource * 1.1) {
           const tauxSurcharge = Math.round((totalJoursAffectes / capNetteRessource) * 100);

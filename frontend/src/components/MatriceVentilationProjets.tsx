@@ -86,7 +86,7 @@ export const MatriceVentilationProjets: React.FC<MatriceVentilationProjetsProps>
   const [matriceData, setMatriceData] = useState<MatriceProjetItem[]>([]);
   const [capaciteMensuelle, setCapaciteMensuelle] = useState<MoisCapacite[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isCompact, setIsCompact] = useState<boolean>(false);
+  const [isCompact, setIsCompact] = useState<boolean>(true);
 
   // Mode Édition Rapide & State des modifications non enregistrées
   const [isEditMode, setIsEditMode] = useState<boolean>(false);

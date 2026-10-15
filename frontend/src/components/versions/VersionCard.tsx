@@ -219,7 +219,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
               <span style={{ color: 'var(--text-dim)' }}>À faire : <strong style={{ color: 'var(--text-main)' }}>{metrics.todo}</strong></span>
               <span style={{ color: '#fbbf24' }}>En cours : <strong>{metrics.inProgress}</strong></span>
               <span style={{ color: '#c084fc' }}>Technical Validation : <strong>{metrics.review}</strong></span>
-              <span style={{ color: '#fb923c' }}>QA : <strong>{metrics.qa}</strong></span>
+              <span style={{ color: '#2dd4bf' }}>Tests / QA : <strong>{metrics.qa}</strong></span>
               <span style={{ color: '#34d399' }}>Terminés : <strong>{metrics.done}</strong></span>
             </div>
           </div>
@@ -247,8 +247,12 @@ export const VersionCard: React.FC<VersionCardProps> = ({
             )}
             {metrics.qa > 0 && (
               <div
-                title={`Recette: ${metrics.qa}`}
-                style={{ width: `${(metrics.qa / totalTickets) * 100}%`, backgroundColor: '#f97316' }}
+                title={`Tests / QA: ${metrics.qa}`}
+                style={{
+                  width: `${(metrics.qa / totalTickets) * 100}%`,
+                  backgroundColor: '#14b8a6',
+                  boxShadow: '0 0 8px rgba(20, 184, 166, 0.5)'
+                }}
               />
             )}
             {metrics.review > 0 && (

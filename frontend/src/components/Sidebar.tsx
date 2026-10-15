@@ -11,7 +11,8 @@ import {
   UserCheck,
   Clock,
   History,
-  Milestone
+  Milestone,
+  Activity
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -50,7 +51,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <div className="sidebar-logo">CartOMC Capacity</div>
+        <div className="sidebar-brand">
+          <div className="sidebar-logo-icon">
+            <Activity size={20} strokeWidth={2.6} />
+          </div>
+          <div className="sidebar-brand-text">
+            <div className="sidebar-title-row">
+              <span className="sidebar-brand-main">CartOMC</span>
+              <span className="sidebar-version">v{__APP_VERSION__}</span>
+            </div>
+            <span className="sidebar-brand-sub">CAPACITY PLANNING</span>
+          </div>
+        </div>
       </div>
 
       <ul className="nav-list">

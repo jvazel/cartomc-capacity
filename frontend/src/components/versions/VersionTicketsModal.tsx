@@ -49,7 +49,7 @@ export const VersionTicketsModal: React.FC<VersionTicketsModalProps> = ({ versio
   const isDoneStatus = (statusName: string = '', category: string = ''): boolean => {
     if (category === 'done') return true;
     const s = statusName.toLowerCase().trim();
-    return ['terminé', 'termine', 'fini', 'done', 'closed', 'fermé', 'ferme', 'résolu', 'resolu', 'resolved', 'livré', 'livre', 'en prod'].includes(s);
+    return ['terminé', 'termine', 'fini', 'done', 'closed', 'fermé', 'ferme', 'résolu', 'resolu', 'resolved', 'livré', 'livre', 'en prod', 'prêt pour prod', 'awaiting prod integration', 'en attente mep', 'en attente prod'].includes(s);
   };
 
   // Ordre de priorité des statuts pour le tri
@@ -435,6 +435,8 @@ export const VersionTicketsModal: React.FC<VersionTicketsModalProps> = ({ versio
                                 ? 'badge-danger'
                                 : isDone
                                 ? 'badge-success'
+                                : t.statusCategory === 'qa'
+                                ? 'badge-qa'
                                 : t.statusCategory === 'inprogress'
                                 ? 'badge-warning'
                                 : t.statusCategory === 'review'

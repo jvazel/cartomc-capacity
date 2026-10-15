@@ -396,11 +396,9 @@ export const TimelinePage: React.FC = () => {
   // Configuration des périodes d'affichage
   const periodes = React.useMemo(() => {
     if (vueGranularite === 'semaine') {
-      // Découpage en tranches réelles du mois avec numéro de semaine ISO-8601 annuel (S01 à S52/S53)
-      const nbJoursDansMois = new Date(annee, moisFocusSemaine, 0).getDate();
       const nomMoisCourt = NOMS_MOIS_COURTS[moisFocusSemaine - 1];
 
-      // Fonction helper standard ISO 8601 pour calculer le numéro de semaine annuel
+      // Helper standard ISO 8601 pour calculer le numéro de semaine annuel
       const getISOWeekNumber = (date: Date): number => {
         const target = new Date(date.valueOf());
         const dayNr = (date.getDay() + 6) % 7; // Lundi = 0, Dimanche = 6
@@ -413,29 +411,37 @@ export const TimelinePage: React.FC = () => {
         return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
       };
 
-      // Tranches calendaires du mois (1-7, 8-14, 15-21, 22-28, 29-fin)
-      const tranches = [
-        { start: 1, end: 7, refDay: 4 },
-        { start: 8, end: 14, refDay: 11 },
-        { start: 15, end: 21, refDay: 18 },
-        { start: 22, end: 28, refDay: 25 },
-        ...(nbJoursDansMois > 28 ? [{ start: 29, end: nbJoursDansMois, refDay: Math.min(29, nbJoursDansMois) }] : [])
-      ];
+      // Calcul des vraies semaines ISO du mois (du 1er au dernier jour du mois)
+      const daysInMonth = new Date(annee, moisFocusSemaine, 0).getDate();
+      const weekGroups: { [weekNum: number]: { weekNum: number; days: number[] } } = {};
+      const orderedWeekNums: number[] = [];
 
-      const totalTranches = tranches.length;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const curDate = new Date(annee, moisFocusSemaine - 1, day);
+        const wNum = getISOWeekNumber(curDate);
+        if (!weekGroups[wNum]) {
+          weekGroups[wNum] = { weekNum: wNum, days: [] };
+          orderedWeekNums.push(wNum);
+        }
+        weekGroups[wNum].days.push(day);
+      }
 
-      return tranches.map((t, idx) => {
-        // Date de référence au sein de la tranche pour extraire la semaine ISO annuelle
-        const refDate = new Date(annee, moisFocusSemaine - 1, t.refDay);
-        const isoWeekNum = getISOWeekNumber(refDate);
+      const totalWeeks = orderedWeekNums.length;
+
+      return orderedWeekNums.map((wNum, idx) => {
+        const group = weekGroups[wNum];
+        const startDay = group.days[0];
+        const endDay = group.days[group.days.length - 1];
 
         return {
-          key: `W_${moisFocusSemaine}_${isoWeekNum}_${idx}`,
-          label: `S${isoWeekNum} (${t.start}-${t.end} ${nomMoisCourt})`,
+          key: `W_${moisFocusSemaine}_${wNum}_${idx}`,
+          label: `S${wNum} (${startDay}-${endDay} ${nomMoisCourt})`,
           moisList: [moisFocusSemaine],
           isWeek: true,
-          weekFraction: 1 / totalTranches,
-          weekNum: isoWeekNum
+          weekFraction: group.days.length / daysInMonth,
+          weekNum: wNum,
+          startDay,
+          endDay
         };
       });
     }
@@ -1032,7 +1038,7 @@ export const TimelinePage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
+    <div style={{ width: '100%' }}>
       
       {/* BANDEAU MODE SIMULATION WHAT-IF & BROUILLON */}
       {isSimulationActive && (

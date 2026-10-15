@@ -7,9 +7,15 @@
 ## 1. Stack Technique & Exécution
 
 - **Frontend** : React + TypeScript (Vite), Recharts pour la restitution graphique, Lucide-react pour les icônes.
-- **Style & Thème** : Dark mode moderne *"Modern Next-Gen / Dark Slate & Electric Cyan"* en Vanilla CSS (variables CSS globales dans `index.css`).
+- **Style & Thème** : Dark mode moderne *"Modern Next-Gen / Dark Slate & Vibrant Orange"* en Vanilla CSS (variables CSS globales dans `index.css`).
   - **Polices Google Fonts** : `Plus Jakarta Sans` (corps & grilles), `Outfit` (titres & en-têtes), `JetBrains Mono` (chiffres & badges).
-  - **Design System** : Glassmorphism translucide (`backdrop-filter`), palette Dark Slate (`#0b1120`), accents Cyan Électrique (`#06b6d4`), contours avec lueurs néons et modaux anti-débordement responsive.
+  - **Design System** : Glassmorphism translucide (`backdrop-filter`), palette Dark Slate (`#0b1120`), accents Orange Électrique (`#f97316` / `#ea580c`), sélections actives néon orange et modaux anti-débordement responsive.
+  - **Charte Graphique des Modales / Popins (Exigence Globale)** :
+    - Toutes les popins et modales de l'application (création/modification projet, création/modification ressource, popins de confirmation, configuration, jalons, tickets, etc.) adoptent obligatoirement le code couleur dominant **Orange Vibrant** (`#f97316` / `#ea580c` / `rgba(249, 115, 22, ...)`).
+    - **Bordure & Glow de la popin** : Bordure néon orange `1px solid rgba(249, 115, 22, 0.45)` et lueur d'élévation `box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(249, 115, 22, 0.22)`.
+    - **En-têtes & Onglets** : Dégradé d'en-tête subtil orange (`rgba(249, 115, 22, 0.15)` vers transparent), onglets actifs cerclés et surlignés en orange néon avec pastille de comptage orange.
+    - **Boutons d'action principaux & Fermeture** : Boutons de validation / soumission en orange primaire (`var(--primary)`) avec halo lumineux orange (`rgba(249, 115, 22, 0.35)`). Les boutons de fermeture en croix « X » des popins s'illuminent obligatoirement en **surbrillance orange néon au survol** (bordure `var(--primary)`, fond `var(--primary-glow)`, halo `rgba(249, 115, 22, 0.35)` et icône orange avec lueur), garantissant une interaction visuelle unifiée. Les anciens accents bleu/cyan sur les popins sont proscrits.
+  - **Identité & En-tête Sidebar** : Logo badge néon dégradé Orange Vibrant (`#ff7a18` à `#d93800`) avec icône d'activité pulsée, hiérarchie typographique "CartOMC" (blanc perlé) / "CAPACITY PLANNING" (sous-titre orange uppercase avec espacement) et badge de version `v{version}` dynamique.
 - **Base de données** : MongoDB local (`mongodb://localhost:27017/capacity_planning_cartomc`), via Mongoose.
 - **Lancement** : Monorepo exécutable par la commande unique à la racine `npm run dev` (via `concurrently`).
 - **Langue & Régionalisation** : Interface 100% en français (dates `JJ/MM/AAAA`, nombres avec virgule décimale).
@@ -27,13 +33,14 @@
 2. **Capacitif Théorique** :
    - TOUTES les ressources paramétrées et actives comptent dans la capacité théorique (aucun filtre par rôle).
    - `ETP du mois` = somme des `tauxActivite` des ressources actives sur le mois (actives = `dateArrivee <= fin du mois` ET (`dateDepart` vide OU `>= debut du mois`) ET `actif == true`).
-3. **Modal de Création / Édition de Ressource (Design Glassmorphism & Profil Visuel)** :
+3. **Modal de Création / Édition de Ressource (Design Glassmorphism Orange Vibrant & Profil Visuel)** :
+   - Habillage néon orange dominant (bordure orange translucide, halo lumineux d'élévation, en-tête dégradé orange).
    - En-tête dynamique avec avatar calculé en temps réel (initiales), badges de population (`Interne` cyan / `Externe` violet) et indicateur Lead BA doré.
    - **Cartes interactives structurées** :
      - *Identité & Profil* : matricule, nom complet, population et rôle métier.
-     - *Capacité & Engagement* : saisie d'ETP numérique et raccourcis rapides en 1 clic (100%, 80%, 50%), carte à cocher moderne Lead BA.
+     - *Capacité & Engagement* : saisie d'ETP numérique et raccourcis rapides en 1 clic (100%, 80%, 50% avec mise en valeur orange vibrant active), carte à cocher moderne Lead BA.
      - *Contrat & Statut* : dates d'arrivée/départ et carte toggle visuelle moderne *Actif (Vert)* / *Inactif (Rouge)*.
-   - **Footer d'action fixé** : Boutons "Annuler" et "Enregistrer les modifications" / "Créer le collaborateur" avec notification toaster (`showSuccess`).
+   - **Footer d'action fixé** : Boutons "Annuler" et "Enregistrer les modifications" / "Créer le collaborateur" avec bouton primaire orange et halo d'action.
 4. **Bandeau de Cartes KPI Synthétiques d'Équipe (Style Visual Wow)** :
    - 4 cartes avec lueurs néon translucides :
      - *Effectif Actif* : Nombre total d'actifs sur effectif global, avec répartition en pastilles (Internes cyan 🔵 / Externes violet 🟣).
@@ -44,6 +51,11 @@
    - Bouton de bascule dans la barre d'outils :
      - **Mode Cartes (Trombinoscope)** : Cartes individuelles glassmorphism avec avatar calculé (initiales), badges de population, rôle métier, jauge ETP cyan, dates de contrat et actions rapides.
      - **Mode Grille Dense** : Tableau compact avec avatars ronds miniatures, filtres par type, rôle métier et statut (Actif/Inactif).
+6. **Navigation Sous-Onglets de la Page Ressources (`RessourcesPage.tsx`)** :
+   - **Référentiel Équipe** : Gestion des collaborateurs, création/édition, trombinoscope et tableau dense.
+   - **Suivi des Absences** : Matrice mensuelle et annuelle des congés/absences et détection des pics.
+   - **Projets & Affectations** : Ventilation des collaborateurs sur les projets.
+   - **Capacités Mensuelles (`VerifCapaciteTable.tsx`)** : Tableau de contrôle et de vérification des capacités mensuelles (Capacité Théorique, Déperdition, Capacité Nette, ETP moyen, Jours ouvrés) par population (*Global*, *Interne*, *Externe*, *Côte à côte*) déplacé depuis l'Administration vers ce nouvel onglet dédié.
 
 ### B. Calendrier, Jours Ouvrés & Jours Fériés Légaux (France Zone B)
 1. **Déduction automatique des jours fériés légaux français (Zone B)** :
@@ -99,14 +111,15 @@
 
 ### D. Portefeuille Projets & Ventilation Mensuelle (Étape 3)
 1. **Modèle Projet** : `codeProjet` (facultatif, avec avertissement visuel d'unicité à la saisie), `nom`, `type` ("RUN" | "Projet" | "Projet Opex" | "Reco" | "Vie d'entreprise"), `epicDomaine`, `leadBA` (référence ressource BA), `priorite` ("P0" à "P4" | null), `statut` ("À l'étude" | "Validé" | "En cours" | "Terminé"), `estimationB0`, `estimationB1`, `epicJiraLie` ("Oui" | "Non" | "NC"), `donneesAJour`.
-2. **Modal de Création / Édition de Projet (Design Glassmorphism & Multi-Onglets)** :
+2. **Modal de Création / Édition de Projet (Design Glassmorphism Orange Vibrant & Multi-Onglets)** :
+   - Habillage néon orange dominant conforme à la charte (bordure `rgba(249, 115, 22, 0.45)`, lueur `rgba(249, 115, 22, 0.22)`, en-tête dégradé orange et icône rétroéclairée orange).
    - Formulaire moderne avec bandeau d'en-tête dynamique et badges visuels (priorité, type).
-   - **4 Onglets Thématiques** pour une saisie claire et sans surcharge :
+   - **4 Onglets Thématiques avec indicateur actif orange néon** :
      - **« Général & Pilotage »** : Code projet, nom, typologie, domaine/epic, Lead BA, priorité colorée (P0 à P4), statut et notes libres.
      - **« Chiffrage B0 / B1 »** : Cartes visuelles d'estimation avec verrouillage interactif du B0 pour activer le chiffrage fin B1.
      - **« Jira & Tempo »** : Raccordement automatique à la ligne budgétaire, clé Epic et ID Feature.
      - **« Prérequis »** : Gestion des dépendances Fin ➔ Début avec suppression en un clic et compteur dynamique.
-   - **Footer d'action fixé** : Boutons "Annuler" et "Enregistrer les modifications" / "Créer le projet".
+   - **Footer d'action fixé** : Boutons "Annuler" et "Enregistrer les modifications" / "Créer le projet" avec halo lumineux orange sur le bouton de soumission.
    - Lors de la soumission, la popin se ferme, rafraîchit les données en temps réel et déclenche un **toaster de notification vert** (`showSuccess`).
 3. **Ventilation Mensuelle (`VentilationMensuelle`)** : Ventilée mois par mois en jours **Internes** et jours **Externes** pour chaque projet. La saisie dans le modal individuel s'effectue sous forme de tableau vertical (mois de Janvier à Décembre disposés en lignes) pour un défilement et une saisie fluide. Un endpoint batch (`POST /api/projets/:id/ventilation/batch`) permet d'enregistrer toute l'année en une fois depuis la grille de saisie. Au clic sur le bouton "Enregistrer la ventilation", la popin se ferme automatiquement, déclenche un rafraîchissement complet des données/KPIs et affiche un toaster de succès.
 4. **Matrice de Ventilation Globale & Synthèse Capacitive (`MatriceVentilationProjets`)** :
@@ -125,6 +138,7 @@
      - **Navigation clavier fluide** : Validation et déplacement par `Entrée` (ligne suivante), `Tab` / `Shift+Tab` (mois suivant/précédent), et `Échap` (annulation).
      - **Feedback visuel & Recalcul en temps réel** : Surlignage ambre translucide des cellules modifiées, recalcul instantané des indicateurs et alertes mensuelles ⚠️.
      - **Barre d'action de sauvegarde batch flottante** : Présente un récapitulatif du nombre de projets modifiés avec les boutons *Enregistrer tout* (`POST /api/projets/:id/ventilation/batch`) et *Annuler*.
+   - **Affichage & Mode Compact par défaut** : La matrice est configurée en **Vue Compacte par défaut** (`isCompact: true`, table stylisée avec `grid-table-compact`), densifiant la hauteur des lignes et les cellules pour offrir une visibilité maximale sur un grand nombre de projets sans défilement excessif. L'utilisateur peut permuter vers la vue standard via le bouton de bascule.
    - **Feedback Visuel des Surcharges Mensuelles** : Surlignage automatique des colonnes des mois en rouge feutré (`rgba(239, 68, 68, 0.15)`) et alerte `⚠️` dès que la *Production Prévue* excède la *Capacité Nette*.
    - Permet l'ouverture directe du modal de ventilation individuelle au clic sur l'action d'un projet.
 5. **Bandeau de Cartes KPI Synthétiques & Filtres de Risques (Onglet "Liste & Chiffrage")** :
@@ -192,10 +206,11 @@
 
 ### G. Timeline Capacitive, Planning Ressources Split-Screen & Simulation What-If (Étape 5)
 1. **Vue Gantt Chronologique & Granularité Temporielle** :
+   - **Mise en page pleine largeur (Full-Width)** : L'écran Timeline exploite 100% de la largeur disponible de l'écran (`width: 100%`, sans contrainte artificielle de `maxWidth`), maximisant l'espace horizontal pour l'affichage confortable des barres Gantt, des jalons et des découpages temporels (mois, trimestres, semaines).
    - Présente tous les projets du portefeuille en ligne avec leur code, nom, type, lead BA et priorité.
    - **Bascule de granularité** : Affichage au choix en **Mois** (12 colonnes), **Trimestres** (Q1 à Q4), **Semestres** (S1 à S2) ou **Semaines (Zoom court terme M / M+1)**.
    - **Mode Semaines chirurgical (Inspiré de Visual Planning)** :
-     - Découpage du mois focus en semaines calendaires avec numérotation standard ISO-8601 (`S01` à `S52/S53`) et dates associées.
+     - Découpage du mois focus en semaines calendaires avec numérotation standard ISO-8601 (`S01` à `S52/S53`) et **plages de dates réelles entre parenthèses** calculées selon les jours effectifs du mois (ex: `S01 (1-4 Jan)`, `S02 (5-11 Jan)`... jusqu'au dernier jour du mois).
      - Boutons de raccourcis d'accès rapide **`⚡ M (Mois en cours)`** et **`M+1 (Mois prochain)`** pour accélérer les arbitrages de charge immédiats.
      - Les jalons/milestones précis à la semaine sont positionnés sur leur semaine exacte.
    - **Vue « Planning Ressources » (Gantt nominatif de charge & surbooking individuel)** :
@@ -581,6 +596,7 @@
       - *Vue Calendrier Mensuel* : Visualisation des jalons de toutes les versions sur un calendrier interactif avec numéros de semaine ISO-8601.
     - **Tri Intelligent & Dynamique des Versions (`VersionsPage.tsx`)** :
       - **Tri Chronologique MEP par Date Pivot** : Les versions dont l'échéance de MEP est à venir ($\ge$ Date du jour) sont classées en tête par ordre chronologique croissant (la plus proche en premier). Les échéances passées ($<$ Date du jour) sont automatiquement reléguées en bas de liste, suivies des versions sans date renseignée.
+      - **Harmonisation avec le Calendrier des Jalons du Dashboard (`DashboardVersionsCalendar.tsx`)** : La liste déroulante du filtre des versions du calendrier des jalons adopte exactement ce même algorithme d'ordonnancement chronologique (versions futures en tête, puis passées, puis sans date) pour une cohérence parfaite entre les deux vues.
       - **Tri par Tickets en Cours** : Sélecteur de tri dédié (`Tickets En cours - Plus élevé` / `Moins élevé`) et tuile KPI interactive cliquable en 1 clic pour isoler les releases ayant le plus de chantiers actifs.
       - **Autres options de tri** : Par total de tickets, nombre d'anomalies/alertes, ou nom alphabétique.
     - **Système de Pagination des Versions (`VersionsPage.tsx`)** :
@@ -588,8 +604,10 @@
       - **Sélecteur de taille de page** : Choix personnalisable entre **5, 10, 20 ou 50 versions par page** (valeur par défaut : 10).
       - **Barre d'outils de pagination complète** : Affichage du décompte (« *Affichage de X à Y sur Z versions* »), boutons *Première page*, *Précédent*, numéros de page avec ellipses dynamiques (`...`), *Suivant*, et *Dernière page*.
       - **Remise à zéro automatique** : Rebascule automatique à la page 1 lors de toute modification des filtres (Recherche, Statut de publication, Tri ou Taille de page).
-    - **Reconnaissance du statut "Technical Validation" (Revue)** :
-      - Mappage des libellés Jira `Technical Validation`, `tech validation`, `validation technique` sur l'étape de validation technique/MR avec badge violet dédié (`#c084fc`).
+    - **Mappage Métier des Statuts Jira Spécifiques** :
+      - **"Technical Validation" (Revue / MR)** : Mappage des libellés `Technical Validation`, `tech validation`, `validation technique` sur l'étape de validation technique/MR avec badge violet dédié (`#c084fc`).
+      - **"Tests / QA" ("Ready to test", "Tests QLF", "Recette")** : Considérés comme étant dans la phase de test / QA (catégorie `qa`). Ils disposent désormais d'une **couleur dédiée Teal / Cyan néon** (badge `.badge-qa` `#2dd4bf` avec halo doux), permettant de les distinguer immédiatement des développements en cours (jaune/ambre `#fbbf24`) et des anomalies.
+      - **"Awaiting Prod Integration" (Tests validés / Prêt pour MEP)** : Indique que les tests ont été validés et qu'il n'a pas encore été déployé en production (considéré dans le périmètre livré / validé, catégorie `done`, badge vert `#10b981`).
     - **Popin Détaillée des Tickets Élargie & Plein Écran (`VersionTicketsModal.tsx`)** :
       - **Largeur optimisée (1360px) et Mode Plein Écran (Toggle `[⛶ Plein écran]` à 98vw)** garantissant l'affichage sans défilement étouffé de toutes les colonnes (*Clé*, *Résumé*, *Assigné*, *Statut Jira*, *Temps*, *Diagnostic Jalon*).
       - **Mise en valeur critique du statut "Blocked"** :
@@ -600,15 +618,26 @@
         - Découpage paginé des tickets Jira (défaut : **15 tickets par page**, options à 10, 15, 25, 50, 100).
         - Barre de navigation fixée en pied de modale : compteur dynamique (« *Affichage de X à Y sur Z tickets* »), boutons *Première*, *Précédent*, numéros de page avec ellipses, *Suivant*, et *Dernière*.
         - Réinitialisation instantanée à la page 1 lors de l'application de filtres rapides (ex: Bloqués, Anomalies, À décaler, Terminés), recherche textuelle ou changement de taille de page.
+      - **Filtrage par Présence de Tickets Jira (Masquage par défaut des versions vides)** :
+        - Par défaut, les versions ne possédant aucun ticket Jira associé (`totalTickets === 0`) sont masquées de la vue pour focaliser le pilotage sur les releases actives.
+        - Nouveau groupe de filtres rapides dans la barre d'outils :
+          - **Avec tickets (N)** *(défaut)* : versions ayant au moins un ticket Jira.
+          - **Sans ticket (N)** : versions créées dans Jira sans aucun ticket associé, permettant de les inspecter rapidement.
+          - **Toutes (N)** : vue globale combinée.
       - **Vue Dédiée des Tickets Orphelins (Sans Version)** :
         - Endpoint dédié `GET /api/versions/unassigned/tickets?projectKey=...` détectant tous les tickets sans version (`fixVersions` vide, `null`, `NC`, ou `Sans version`).
-        - **Tuile KPI interactive `[Sans version]`** dans l'en-tête et bouton dédié **`[⚠️ Sans version (N)]`** dans la barre de filtre.
+        - **Tuile KPI interactive `[Sans version]`** dans l'en-tête et bouton dédié **`[⚠️ Tickets sans version (N)]`** dans la barre de filtre.
         - Ouvre la popin avec vue complète, tri par statut, filtres et recherche pour identifier immédiatement les tickets oubliés ou à affecter.
 
-20. **Calendrier des Jalons Opérationnels sur le Dashboard (`DashboardVersionsCalendar.tsx` & `DashboardPage.tsx`)** :
-    - **Synchronisation Temporelle Automatique avec le Dashboard** :
-      - **Mode Zoom Mensuel** : Si l'utilisateur sélectionne un mois précis (ou via les raccourcis *Mois en cours*, *Q1..Q4*), le calendrier n'affiche que le mois sélectionné avec toutes ses échéances détaillées.
-      - **Mode Vue Annuelle** : Si l'utilisateur choisit *Année entière*, le calendrier bascule sur une grille responsive synthétique découpée en **12 mois**, avec bouton de zoom individuel sur chaque mois.
+20. **Calendrier des Jalons Opérationnels & Filtrage Temporel sur le Dashboard (`DashboardVersionsCalendar.tsx` & `DashboardPage.tsx`)** :
+    - **Synchronisation Temporelle Automatique & Support Multi-Mois / Trimestres** :
+      - **Agrégation Trimestrielle Complète (3 mois calendaires)** :
+        - Les raccourcis rapides **Q1** (Jan-Mar), **Q2** (Avr-Juin), **Q3** (Juil-Sep), **Q4** (Oct-Déc) activent le mode trimestre (`trimestre=1..4`).
+        - **Backend (`/api/dashboard/control-tower?annee=YYYY&trimestre=X`)** : Agrège et cumule les données réelles (affectations, Tempo, planifié, réservé, équilibres RUN/BUILD et priorités) sur l'ensemble des 3 mois constituant le trimestre sélectionné.
+        - **Graphique en barres empilées** : Filtre et affiche les barres des 3 mois du trimestre avec leur capacité nette respective.
+        - **Calendrier des Jalons** : Affiche côte à côte la grille des 3 mois du trimestre avec filtrage exclusif des jalons du trimestre.
+      - **Mode Zoom Mensuel** : Si l'utilisateur sélectionne un mois précis (ou via le raccourci *Mois en cours*), le tableau de bord et le calendrier n'affichent que ce mois unique.
+      - **Mode Vue Annuelle** : Si l'utilisateur choisit *Année entière*, le tableau de bord cumule les 12 mois et le calendrier bascule sur une grille responsive synthétique découpée en **12 mois**, avec bouton de zoom individuel sur chaque mois.
     - **Numéros de Semaine ISO-8601 (`Sem.`)** : Chaque ligne de semaine intègre une colonne dédiée calculant et affichant le numéro de semaine exact (`S1..S53`) selon la norme internationale ISO-8601.
     - **Restitution des 6 Jalons Clés de Version** : Badges néons colorés (Fin À faire, Fin En cours, Fin MR / Tech Validation, Fin Recette, MEPP, MEP).
     - **Filtres Contextuels & Interactivité** : Filtre par version, par type de jalon, légende cliquable, et ouverture immédiate de la modale d'édition ou de détail des tickets au clic sur un jalon.
@@ -646,6 +675,16 @@
       - **3. Arrivée du Scope (Scope Creep & Volatilité)** : Diagramme combiné Recharts (`ComposedChart`) visualisant semaine par semaine le flux d'entrée de nouveaux tickets et de jours ajoutés face au rythme de finalisation (tickets livrés).
       - **4. Capacité Nette vs Charge Version (Faisabilité & Saturation)** : Comparaison entre la capacité théorique disponible de l'équipe sur la période de la release (jours ouvrés $\times$ contributeurs) face à la charge estimée (Scope) et au consommé réel, avec jauge de saturation / faisabilité (`%`).
       - **5. Respect des 6 Jalons Clés (Dérive Cible vs Réalisé)** : Histogramme des écarts en $\pm$ jours par rapport aux dates contractuelles des 6 étapes clés (*Fin À faire*, *Fin En cours*, *Fin MR*, *Fin Recette*, *MEPP*, *MEP*), complété par un tableau récapitulatif détaillé avec statuts diagnostiques (*Dans les temps*, *En avance*, *Retard*).
+22. **Module Temps Tempo Jira & Affichage du Détail (`TempoDetailTable.tsx`)** :
+    - **Pagination Intégrée Haute Performance pour Volumes Importants** :
+      - Découpage paginé des milliers de lignes de worklogs Tempo (options : **15, 25, 50, 100, 250 lignes par page**, 25 par défaut).
+      - Barre de pagination inférieure complète avec affichage du rang dynamique (« *Affichage de X à Y sur Z lignes* »), sélecteur de taille par page, boutons *Première*, *Précédent*, numéros de page avec ellipses, *Suivant*, et *Dernière*.
+      - Maintien du cumul d'effort en jours/homme : total global filtré et sous-total spécifique à la page consultée.
+    - **Filtres Rapides & Ergonomie** :
+      - Filtres par population (Tous, Internes INT, Externes EXT, Non répertoriés).
+      - Filtre par catégorie budgétaire / métier via liste déroulante dynamique auto-construite.
+      - Recherche instantanée multi-champs (clé de ticket, collaborateur, tâche, lot, commentaire, epic, version) avec bouton de réinitialisation rapide `[✕]`.
+      - Tri ascendant/descendant par colonne (avec support numérique et textuel).
 
 ---
 
