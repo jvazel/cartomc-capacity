@@ -163,8 +163,8 @@ export const VersionCard: React.FC<VersionCardProps> = ({
           <VersionStepper version={version} onEditClick={() => onConfigureMilestones(version)} />
         </div>
 
-        {/* Encart d'alerte spécifique si des tickets sont bloquants / à décaler */}
-        {aDecaler > 0 && (
+        {/* Encart d'alerte si des tickets sont hors délais sur les jalons ou à décaler */}
+        {anomaliesTotal > 0 && (
           <div
             style={{
               marginTop: '14px',
@@ -182,8 +182,8 @@ export const VersionCard: React.FC<VersionCardProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fca5a5' }}>
               <AlertCircle size={18} style={{ color: 'var(--danger)', flexShrink: 0 }} />
               <span>
-                <strong style={{ color: '#ffffff' }}>{aDecaler} ticket(s)</strong> sont encore au statut{' '}
-                <em>« À faire »</em> alors que la date limite de prise en charge est passée.
+                <strong style={{ color: '#ffffff' }}>{anomaliesTotal} ticket(s)</strong> présentent un statut non conforme à l'avancement des jalons
+                {aDecaler > 0 && ` (${aDecaler} non démarré(s))`}.
               </span>
             </div>
             <button
@@ -196,7 +196,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
                 whiteSpace: 'nowrap'
               }}
             >
-              Consulter pour décalage Jira
+              Consulter les anomalies Jira
             </button>
           </div>
         )}

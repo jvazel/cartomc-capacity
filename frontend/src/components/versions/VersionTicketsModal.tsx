@@ -57,8 +57,8 @@ export const VersionTicketsModal: React.FC<VersionTicketsModalProps> = ({ versio
     // Statut Blocked / Bloqué prioritaire absolu
     if (isBlockedStatus(t.status)) return 0;
 
-    // Anomalie critique / retard
-    if (t.anomaly === 'a_decaler') return 1;
+    // Anomalie critique / retard de jalon
+    if (t.anomaly !== 'none') return 1;
 
     if (isDoneStatus(t.status, t.statusCategory)) return 6;
 

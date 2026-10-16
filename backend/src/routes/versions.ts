@@ -28,6 +28,105 @@ export function categorizeJiraStatus(statusName: string = ''): 'todo' | 'inprogr
   return 'other';
 }
 
+// Fonctions d'aide pour vérifier la conformité des statuts Jira avec les jalons dépassés
+export function isStatusAcceptedForFinMR(statusName: string = ''): boolean {
+  const s = statusName.toLowerCase().trim();
+  // Statuts autorisés après Fin MR : Validating, Ready to test, Tests QLF, Awaiting Prod Integration, Fini, Cancelled
+  const acceptedTokens = [
+    'validating',
+    'ready to test',
+    'prêt pour test',
+    'pret pour test',
+    'ready for test',
+    'tests qlf',
+    'test qlf',
+    'qlf',
+    'en qlf',
+    'awaiting prod integration',
+    'fini',
+    'done',
+    'terminé',
+    'termine',
+    'closed',
+    'fermé',
+    'ferme',
+    'résolu',
+    'resolu',
+    'resolved',
+    'livré',
+    'livre',
+    'en prod',
+    'prêt pour prod',
+    'cancelled',
+    'canceled',
+    'annulé',
+    'annule'
+  ];
+  return acceptedTokens.some(token => s === token || s.includes(token));
+}
+
+export function isStatusAcceptedForFinRecetteOrMEPP(statusName: string = ''): boolean {
+  const s = statusName.toLowerCase().trim();
+  // Statuts autorisés après Fin Recette ou MEPP : Awaiting Prod Integration, Fini, Cancelled
+  const acceptedTokens = [
+    'awaiting prod integration',
+    'fini',
+    'done',
+    'terminé',
+    'termine',
+    'closed',
+    'fermé',
+    'ferme',
+    'résolu',
+    'resolu',
+    'resolved',
+    'livré',
+    'livre',
+    'en prod',
+    'prêt pour prod',
+    'cancelled',
+    'canceled',
+    'annulé',
+    'annule'
+  ];
+  return acceptedTokens.some(token => s === token || s.includes(token));
+}
+
+export function isStatusForbiddenForFinAFaire(statusName: string = ''): boolean {
+  const s = statusName.toLowerCase().trim();
+  // Statuts non permis après Fin À faire : "Ouverte", "Writing", "Validation", "Ready to Sprint", "Waiting Informations"
+  const forbiddenTokens = [
+    'ouverte',
+    'ouvert',
+    'open',
+    'writing',
+    'validation',
+    'ready to sprint',
+    'waiting informations',
+    'waiting information',
+    'waiting for information',
+    'en attente info',
+    'en attente informations'
+  ];
+  return forbiddenTokens.some(token => s === token || s.includes(token));
+}
+
+export function isStatusForbiddenForFinEnCours(statusName: string = ''): boolean {
+  const s = statusName.toLowerCase().trim();
+  // Statuts non permis après Fin En cours : "Ouverte", "Writing", "Validation", "Ready to Sprint", "En cours", "Waiting Informations"
+  if (isStatusForbiddenForFinAFaire(statusName)) {
+    return true;
+  }
+  const enCoursTokens = [
+    'en cours',
+    'in progress',
+    'in dev',
+    'en dev',
+    'development'
+  ];
+  return enCoursTokens.some(token => s === token || s.includes(token));
+}
+
 /**
  * Calcul du statut d'anomalie d'un ticket vis-à-vis des jalons de sa version
  */
@@ -42,25 +141,77 @@ export function checkTicketAnomaly(
     dateMEP?: Date | null;
   },
   now: Date = new Date()
-): { anomaly: 'none' | 'a_decaler' | 'retard_dev' | 'retard_mr' | 'retard_recette'; label: string; severity: 'ok' | 'warning' | 'critical' } {
+): { anomaly: 'none' | 'a_decaler' | 'retard_dev' | 'retard_mr' | 'retard_recette' | 'retard_mepp'; label: string; severity: 'ok' | 'warning' | 'critical' } {
+  const s = (statusName || '').trim();
+  const lowerStatus = s.toLowerCase();
+
+  // Les tickets annulés ne sont jamais en anomalie
+  if (lowerStatus.includes('cancel') || lowerStatus.includes('annul')) {
+    return { anomaly: 'none', label: 'Annulé', severity: 'ok' };
+  }
+
+  // 1. Dépassement MEPP : le statut doit être "Awaiting Prod Integration", "Fini" ou "Cancelled"
+  if (milestones.dateMEPP && now > new Date(milestones.dateMEPP)) {
+    if (!isStatusAcceptedForFinRecetteOrMEPP(statusName)) {
+      return {
+        anomaly: 'retard_mepp',
+        label: `Non conforme MEPP (Statut "${s}" non permis après MEPP)`,
+        severity: 'critical'
+      };
+    }
+  }
+
+  // 2. Dépassement Fin Recette : le statut doit être "Awaiting Prod Integration", "Fini" ou "Cancelled"
+  if (milestones.dateFinRecette && now > new Date(milestones.dateFinRecette)) {
+    if (!isStatusAcceptedForFinRecetteOrMEPP(statusName)) {
+      return {
+        anomaly: 'retard_recette',
+        label: `Non conforme Fin Recette (Statut "${s}" non permis après Fin Recette)`,
+        severity: 'critical'
+      };
+    }
+  }
+
+  // 3. Dépassement Fin MR : le statut doit être "Validating", "Ready to test", "Tests QLF", "Awaiting Prod Integration", "Fini" ou "Cancelled"
+  if (milestones.dateFinMR && now > new Date(milestones.dateFinMR)) {
+    if (!isStatusAcceptedForFinMR(statusName)) {
+      return {
+        anomaly: 'retard_mr',
+        label: `Non conforme Fin MR (Statut "${s}" non permis après Fin MR)`,
+        severity: 'critical'
+      };
+    }
+  }
+
+  // 4. Dépassement Fin En cours : le statut ne doit pas être "Ouverte", "Writing", "Validation", "Ready to Sprint", "En cours", "Waiting Informations"
+  if (milestones.dateFinEnCours && now > new Date(milestones.dateFinEnCours)) {
+    if (isStatusForbiddenForFinEnCours(statusName)) {
+      return {
+        anomaly: 'retard_dev',
+        label: `Non conforme Fin En cours (Statut "${s}" non permis après Fin En cours)`,
+        severity: 'critical'
+      };
+    }
+  }
+
+  // 5. Dépassement Fin À faire : le statut ne doit pas être "Ouverte", "Writing", "Validation", "Ready to Sprint", "Waiting Informations"
+  if (milestones.dateFinAFaire && now > new Date(milestones.dateFinAFaire)) {
+    if (isStatusForbiddenForFinAFaire(statusName)) {
+      return {
+        anomaly: 'a_decaler',
+        label: `Non conforme Fin À faire (Statut "${s}" non permis après Fin À faire)`,
+        severity: 'critical'
+      };
+    }
+  }
+
   const category = categorizeJiraStatus(statusName);
 
   if (category === 'done') {
     return { anomaly: 'none', label: 'Terminé', severity: 'ok' };
   }
 
-  // 1. Dépassement fin À faire : ticket pas encore démarré
-  if (milestones.dateFinAFaire && now > new Date(milestones.dateFinAFaire)) {
-    if (category === 'todo') {
-      return {
-        anomaly: 'a_decaler',
-        label: 'À décaler (Jalon "Fin À faire" dépassé)',
-        severity: 'critical'
-      };
-    }
-  }
-
-  // 2. Dépassement fin En cours : ticket toujours en dév
+  // Fallback si d'autres statuts de type todo ou inprogress dépassent
   if (milestones.dateFinEnCours && now > new Date(milestones.dateFinEnCours)) {
     if (category === 'inprogress') {
       return {
@@ -78,23 +229,11 @@ export function checkTicketAnomaly(
     }
   }
 
-  // 3. Dépassement fin MR : MR toujours ouverte
-  if (milestones.dateFinMR && now > new Date(milestones.dateFinMR)) {
-    if (category === 'review') {
+  if (milestones.dateFinAFaire && now > new Date(milestones.dateFinAFaire)) {
+    if (category === 'todo') {
       return {
-        anomaly: 'retard_mr',
-        label: 'MR non mergée (Freeze MR dépassé)',
-        severity: 'critical'
-      };
-    }
-  }
-
-  // 4. Dépassement fin Recette : Ticket toujours en test
-  if (milestones.dateFinRecette && now > new Date(milestones.dateFinRecette)) {
-    if (category === 'qa' || category === 'inprogress' || category === 'review') {
-      return {
-        anomaly: 'retard_recette',
-        label: 'Recette non validée (Fin de recette dépassée)',
+        anomaly: 'a_decaler',
+        label: 'À décaler (Jalon "Fin À faire" dépassé)',
         severity: 'critical'
       };
     }
@@ -199,6 +338,7 @@ router.get('/', async (req: Request, res: Response) => {
       let countRetardDev = 0;
       let countRetardMR = 0;
       let countRetardRecette = 0;
+      let countRetardMEPP = 0;
 
       ticketList.forEach((t) => {
         const cat = categorizeJiraStatus(t.status);
@@ -221,14 +361,15 @@ router.get('/', async (req: Request, res: Response) => {
         else if (check.anomaly === 'retard_dev') countRetardDev++;
         else if (check.anomaly === 'retard_mr') countRetardMR++;
         else if (check.anomaly === 'retard_recette') countRetardRecette++;
+        else if (check.anomaly === 'retard_mepp') countRetardMEPP++;
       });
 
-      const totalAnomalies = countADecaler + countRetardDev + countRetardMR + countRetardRecette;
+      const totalAnomalies = countADecaler + countRetardDev + countRetardMR + countRetardRecette + countRetardMEPP;
 
       // Calcul de la santé globale de la version
       let health: 'green' | 'orange' | 'red' = 'green';
       if (totalAnomalies > 0) {
-        health = countADecaler > 0 || countRetardDev > 0 ? 'red' : 'orange';
+        health = countADecaler > 0 || countRetardDev > 0 || countRetardRecette > 0 || countRetardMEPP > 0 ? 'red' : 'orange';
       }
 
       return {
@@ -258,7 +399,8 @@ router.get('/', async (req: Request, res: Response) => {
             aDecaler: countADecaler,
             retardDev: countRetardDev,
             retardMR: countRetardMR,
-            retardRecette: countRetardRecette
+            retardRecette: countRetardRecette,
+            retardMEPP: countRetardMEPP
           },
           health
         }

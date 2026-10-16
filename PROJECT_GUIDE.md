@@ -588,9 +588,19 @@
       6. 🎯 *Date de « MEP »* : Déploiement en production finale.
       - Possibilité de modifier, supprimer individuellement chaque jalon ou vider l'ensemble.
       - Assistant de rétro-planning automatique : calcule automatiquement les jalons antérieurs à partir de la date de MEP.
-    - **Moteur d'Alertes de Non-Conformité & Préconisations de Décalage** :
-      - Détection automatique des tickets en retard ou bloquants par rapport aux jalons échus (ex: ticket encore « À faire » après le jalon fin À faire).
-      - Recommandations d'arbitrage immédiates avec bouton de copie des clés Jira pour reporter facilement les tickets dans Jira.
+    - **Moteur d'Alertes de Non-Conformité & Conformité des Statuts Jira aux Jalons** :
+      - Détection automatique et temps réel des anomalies lorsque des jalons opérationnels sont dépassés face aux statuts Jira des tickets associés :
+        1. **Date de MEPP dépassée** : Le statut Jira du ticket doit obligatoirement être `"Awaiting Prod Integration"`, `"Fini"` (ou ses alias `Terminé`, `Closed`, `Done`, `Résolu`) ou `"Cancelled"` / `"Annulé"`. Tout autre statut déclenche une anomalie bloquante (`retard_mepp`).
+        2. **Date de Fin Recette dépassée** : Le statut Jira du ticket doit obligatoirement être `"Awaiting Prod Integration"`, `"Fini"` ou `"Cancelled"`. Tout autre statut déclenche une anomalie critique (`retard_recette`).
+        3. **Date de Fin MR dépassée** : Le statut Jira du ticket doit obligatoirement être parmi `"Validating"`, `"Ready to test"`, `"Tests QLF"`, `"Awaiting Prod Integration"`, `"Fini"` ou `"Cancelled"`. Tout autre statut (notamment dev en cours ou à faire) déclenche une anomalie de merge request (`retard_mr`).
+        4. **Date de Fin En cours dépassée** : Les tickets ne doivent plus être aux statuts `"Ouverte"`, `"Writing"`, `"Validation"`, `"Ready to Sprint"`, `"En cours"` ou `"Waiting Informations"` (déclenche `retard_dev`).
+        5. **Date de Fin À faire dépassée** : Les tickets ne doivent plus être aux statuts `"Ouverte"`, `"Writing"`, `"Validation"`, `"Ready to Sprint"` ou `"Waiting Informations"` (déclenche `a_decaler`).
+      - Les tickets au statut annulé (`Cancelled`, `Annulé`) sont exclus des alertes d'anomalie.
+      - **Restitution des anomalies** :
+        - Décompte et textes explicites sur chacune des pastilles du composant `VersionStepper` (ex: `N ticket(s) non mergé(s)`, `N non validé(s)`, `N non prêt(s)`).
+        - Encart d'alerte global sur la carte de version (`VersionCard`) résumant les tickets non conformes avec raccourci vers la popin.
+        - Priorisation absolue des tickets avec diagnostic d'anomalie au sommet de la modale détaillée (`VersionTicketsModal`) avec badges explicites mentionnant le statut Jira fautif et le jalon dépassé.
+        - Synthèse au niveau des KPI globaux de la page de suivi (`VersionsPage`).
     - **Double Restitution Visuelle** :
       - *Vue Cartes & Pipeline* : Stepper interactif des 6 jalons, badge de santé globale (Vert/Orange/Rouge), répartition des tickets par statut.
       - *Vue Calendrier Mensuel* : Visualisation des jalons de toutes les versions sur un calendrier interactif avec numéros de semaine ISO-8601.
@@ -639,9 +649,9 @@
       - **Mode Zoom Mensuel** : Si l'utilisateur sélectionne un mois précis (ou via le raccourci *Mois en cours*), le tableau de bord et le calendrier n'affichent que ce mois unique.
       - **Mode Vue Annuelle** : Si l'utilisateur choisit *Année entière*, le tableau de bord cumule les 12 mois et le calendrier bascule sur une grille responsive synthétique découpée en **12 mois**, avec bouton de zoom individuel sur chaque mois.
     - **Numéros de Semaine ISO-8601 (`Sem.`)** : Chaque ligne de semaine intègre une colonne dédiée calculant et affichant le numéro de semaine exact (`S1..S53`) selon la norme internationale ISO-8601.
-    - **Restitution des 6 Jalons Clés de Version** : Badges néons colorés (Fin À faire, Fin En cours, Fin MR / Tech Validation, Fin Recette, MEPP, MEP).
-    - **Filtres Contextuels & Interactivité** : Filtre par version, par type de jalon, légende cliquable, et ouverture immédiate de la modale d'édition ou de détail des tickets au clic sur un jalon.
-    - **Double Emplacement** : Directement dans l'onglet principal *"Vue d'Ensemble & KPIs"* et dans l'onglet dédié *"📅 Calendrier des Jalons"*.
+    - **Restitution Dédiée par Onglet** :
+      - **Onglet « Vue d'Ensemble & KPIs »** : Affiche les **3 prochaines versions en approche** ordonnées par échéance MEP avec leur pipeline de jalons (`VersionStepper`), l'encart d'alerte des statuts Jira non conformes et le bouton d'accès direct à la modale des tickets (`VersionTicketsModal`).
+      - **Onglet « 📅 Calendrier des Jalons »** : Affiche la vue calendrier complète multi-mois / annuelle avec numéros de semaine ISO-8601, filtres par version et clics interactifs sur chaque jalon.
 
 21. **Module de Rapports & Pilotage Capacitif des Versions (`VersionReportsView.tsx` & `/api/versions`)** :
     - **Onglet Dédié `[📊 Rapports]` dans le Suivi des Versions** :
@@ -685,6 +695,22 @@
       - Filtre par catégorie budgétaire / métier via liste déroulante dynamique auto-construite.
       - Recherche instantanée multi-champs (clé de ticket, collaborateur, tâche, lot, commentaire, epic, version) avec bouton de réinitialisation rapide `[✕]`.
       - Tri ascendant/descendant par colonne (avec support numérique et textuel).
+
+23. **Administration, Portabilité & Sauvegarde de la Base MongoDB (`/api/database`, `AdminPage.tsx`)** :
+    - **Navigation par Sous-Onglets Dédiés** :
+      - *💾 Sauvegarde & Restauration BDD* : Export / import portable complet des collections MongoDB et statistiques en direct.
+      - *📅 Calendrier des Jours Ouvrés* : Paramétrage annuel des jours ouvrés automatiques et forçage manuel.
+      - *⚙️ Tolérances & Moteur d'estimation* : Seuils de tolérance macro-chiffrage B0/B1, seuil de sous-charge et catégories Tempo identifiées en RUN.
+    - **Exportation Complète Portable (`GET /api/database/export`)** :
+      - Parcours automatique et dynamique de toutes les collections Mongoose existantes (`mongoose.connection.db.collections()`).
+      - Génération d'un fichier `.json` unique et horodaté (`cartomc_backup_YYYY-MM-DD.json`) contenant les métadonnées (`_meta`) et l'intégralité des documents de toutes les collections (projets, ressources, absences, jalons, snapshots, ventilations, worklogs...).
+      - Téléchargement direct depuis le navigateur en 1 clic.
+    - **Restauration & Injection Locale (`POST /api/database/import`)** :
+      - Sélecteur de fichier JSON avec analyse et prévisualisation avant validation (date d'export, nombre de collections et total de documents).
+      - **Sélecteur Visuel Moderne à Cartes Interactives** :
+        - 🟥 **Écraser et remplacer** *(Recommandé pour testeurs)* : Carte avec halo néon orange `#f97316`, icône corbeille rouge et pastille radio dédiée. Vide les collections locales existantes pour garantir un clone 100% fidèle sans doublons. Popin de confirmation native avant application.
+        - 🟦 **Fusionner / Compléter** : Carte avec halo néon cyan `#06b6d4`, icône GitMerge et badge `Conserve l'existant`. Met à jour ou ajoute les documents via leur `_id` en préservant toutes les données locales préexistantes.
+      - Diagnostic et décompte dynamique en temps réel des documents par collection affiché dans l'interface Administration avec notification toast de succès/erreur.
 
 ---
 

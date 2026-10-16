@@ -20,6 +20,7 @@ export interface VersionMetrics {
     retardDev: number;
     retardMR: number;
     retardRecette: number;
+    retardMEPP?: number;
   };
   health: 'green' | 'orange' | 'red';
 }
@@ -53,7 +54,7 @@ export interface VersionTicket {
   ticketLink?: string;
   estimatedInDays?: number | null;
   timeInDays: number;
-  anomaly: 'none' | 'a_decaler' | 'retard_dev' | 'retard_mr' | 'retard_recette';
+  anomaly: 'none' | 'a_decaler' | 'retard_dev' | 'retard_mr' | 'retard_recette' | 'retard_mepp';
   anomalyLabel: string;
   severity: 'ok' | 'warning' | 'critical';
 }

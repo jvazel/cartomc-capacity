@@ -54,6 +54,7 @@ app.use(express.json({ limit: '50mb' }));
 import auditLogsRouter from './routes/auditLogs.js';
 import snapshotsRouter from './routes/snapshots.js';
 import simulationsRouter from './routes/simulations.js';
+import databaseRouter from './routes/database.js';
 
 // Routes API
 app.use('/api/ressources', ressourcesRouter);
@@ -69,6 +70,7 @@ app.use('/api/versions', versionsRouter);
 app.use('/api/audit-logs', auditLogsRouter);
 app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/simulations', simulationsRouter);
+app.use('/api/database', databaseRouter);
 
 // Connexion MongoDB avec log clair en cas d'échec
 mongoose

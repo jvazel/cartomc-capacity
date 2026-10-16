@@ -434,12 +434,12 @@ export const VersionsPage: React.FC = () => {
         </div>
 
         <div
-          className={`card ${totalADecaler > 0 ? 'card-neon-red' : ''}`}
+          className={`card ${totalAnomalies > 0 ? 'card-neon-red' : ''}`}
           style={{
             padding: '18px 20px',
             marginBottom: 0,
-            border: totalADecaler > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : undefined,
-            background: totalADecaler > 0 ? 'rgba(239, 68, 68, 0.1)' : undefined
+            border: totalAnomalies > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : undefined,
+            background: totalAnomalies > 0 ? 'rgba(239, 68, 68, 0.1)' : undefined
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -448,8 +448,8 @@ export const VersionsPage: React.FC = () => {
                 width: '42px',
                 height: '42px',
                 borderRadius: '10px',
-                backgroundColor: totalADecaler > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.15)',
-                color: totalADecaler > 0 ? 'var(--danger)' : 'var(--success)',
+                backgroundColor: totalAnomalies > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.15)',
+                color: totalAnomalies > 0 ? 'var(--danger)' : 'var(--success)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -458,18 +458,23 @@ export const VersionsPage: React.FC = () => {
               <AlertTriangle size={22} />
             </div>
             <div>
-              <div style={{ fontSize: '0.8rem', color: totalADecaler > 0 ? '#fca5a5' : 'var(--text-muted)', fontWeight: 500 }}>
-                Tickets à décaler
+              <div style={{ fontSize: '0.8rem', color: totalAnomalies > 0 ? '#fca5a5' : 'var(--text-muted)', fontWeight: 500 }}>
+                Anomalies Jalons
               </div>
               <div
                 style={{
                   fontSize: '1.5rem',
                   fontWeight: 800,
-                  color: totalADecaler > 0 ? '#f87171' : 'var(--text-main)',
+                  color: totalAnomalies > 0 ? '#f87171' : 'var(--text-main)',
                   letterSpacing: '-0.02em'
                 }}
               >
-                {totalADecaler}
+                {totalAnomalies}
+                {totalADecaler > 0 && totalADecaler !== totalAnomalies && (
+                  <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '6px' }}>
+                    ({totalADecaler} non démarrés)
+                  </span>
+                )}
               </div>
             </div>
           </div>

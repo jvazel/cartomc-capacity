@@ -42,6 +42,7 @@ import {
 import { WorkspaceManager } from '../components/WorkspaceManager';
 import { CircularGauge } from '../components/CircularGauge';
 import { DashboardVersionsCalendar } from '../components/versions/DashboardVersionsCalendar';
+import { VersionCard } from '../components/versions/VersionCard';
 import { MilestoneConfigModal } from '../components/versions/MilestoneConfigModal';
 import { VersionTicketsModal } from '../components/versions/VersionTicketsModal';
 import { VersionItem } from '../components/versions/types';
@@ -249,9 +250,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
       });
   };
 
+  const [versions, setVersions] = useState<VersionItem[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState<boolean>(false);
+
+  const fetchVersions = () => {
+    setLoadingVersions(true);
+    fetch('/api/versions?projectKey=GTEP&filter=unreleased')
+      .then((r) => r.json())
+      .then((data) => {
+        setVersions(data.versions || []);
+        setLoadingVersions(false);
+      })
+      .catch((err) => {
+        console.error('Erreur chargement versions dashboard:', err);
+        setLoadingVersions(false);
+      });
+  };
+
   useEffect(() => {
     fetchDashboardData(annee, mois, trimestre);
-  }, [annee, mois, trimestre]);
+    fetchVersions();
+  }, [annee, mois, trimestre, calendarRefreshKey]);
 
   if (loading || !data) {
     return (
@@ -1021,15 +1040,124 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateWithFilt
             </div>
           </div>
 
-          {/* Calendrier dynamique des Jalons attendus des versions */}
-          <DashboardVersionsCalendar
-            annee={annee}
-            mois={mois}
-            trimestre={trimestre}
-            onSelectMois={(m) => setMois(m)}
-            onConfigureMilestones={(v) => setSelectedVersionForMilestones(v)}
-            onViewTickets={(v) => setSelectedVersionForTickets(v)}
-          />
+          {/* Volet : Les 2 Prochaines Versions de Release & Détection d'Alertes */}
+          <div style={{ marginTop: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(249, 115, 22, 0.15)',
+                    color: '#f97316',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(249, 115, 22, 0.3)'
+                  }}
+                >
+                  <CalendarIcon size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+                    Prochaines Releases en Approche (3 versions cibles)
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Surveillance des jalons, conformité des statuts Jira et alertes de dérive avant Mise en Production (MEP).
+                  </p>
+                </div>
+              </div>
+
+              {/* Raccourci vers le calendrier complet des jalons */}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setActiveCockpitTab('jalons')}
+                style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                title="Consulter le calendrier complet des jalons"
+              >
+                <CalendarIcon size={14} /> Voir le calendrier complet
+              </button>
+            </div>
+
+            {loadingVersions ? (
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                Chargement des prochaines versions...
+              </div>
+            ) : (() => {
+              // Extraction et ordonnancement chronologique des versions selon leur date de MEP (à partir d'aujourd'hui)
+              const startOfToday = new Date();
+              startOfToday.setHours(0, 0, 0, 0);
+              const startOfTodayTime = startOfToday.getTime();
+
+              const getMepTimestamp = (v: VersionItem): number | null => {
+                const raw = v.dateMEP || v.jiraReleaseDate;
+                if (!raw) return null;
+                const t = new Date(raw).getTime();
+                return isNaN(t) ? null : t;
+              };
+
+              // On ne retient que les versions non publiées avec tickets ou jalons
+              const upcomingVersions = [...versions]
+                .filter((v) => !v.released)
+                .sort((a, b) => {
+                  const timeA = getMepTimestamp(a);
+                  const timeB = getMepTimestamp(b);
+
+                  if (timeA === null && timeB === null) {
+                    return a.versionName.localeCompare(b.versionName, undefined, { numeric: true });
+                  }
+                  if (timeA === null) return 1;
+                  if (timeB === null) return -1;
+
+                  const isAFuture = timeA >= startOfTodayTime;
+                  const isBFuture = timeB >= startOfTodayTime;
+
+                  if (isAFuture && !isBFuture) return -1;
+                  if (!isAFuture && isBFuture) return 1;
+
+                  if (isAFuture && isBFuture) {
+                    if (timeA !== timeB) return timeA - timeB;
+                    return a.versionName.localeCompare(b.versionName, undefined, { numeric: true });
+                  }
+
+                  if (timeA !== timeB) return timeB - timeA;
+                  return a.versionName.localeCompare(b.versionName, undefined, { numeric: true });
+                })
+                .slice(0, 3);
+
+              if (upcomingVersions.length === 0) {
+                return (
+                  <div
+                    className="card"
+                    style={{
+                      padding: '30px',
+                      textAlign: 'center',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.9rem',
+                      border: '1px dashed var(--border-color)'
+                    }}
+                  >
+                    Aucune version active planifiée à venir.
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {upcomingVersions.map((v) => (
+                    <VersionCard
+                      key={v._id}
+                      version={v}
+                      onConfigureMilestones={(ver) => setSelectedVersionForMilestones(ver)}
+                      onViewTickets={(ver) => setSelectedVersionForTickets(ver)}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
         </div>
       )}
 

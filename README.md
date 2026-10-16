@@ -18,10 +18,17 @@ Application web moderne d'aide à la décision et de pilotage capacitif d'équip
   - Double niveau d'estimation : Macro-chiffrage **B0** et chiffrage affiné **B1** avec seuils de tolérance et alertes de dérive capacitaire.
   - Matrice globale de ventilation annuelle (style Excel/Airtable) avec mode d'édition rapide en cellule, navigation clavier fluide et sauvegarde par lot (batch).
   - Vue Kanban Agile pour l'arbitrage en comité (statuts, priorités P0 à P4, typologies de charge).
+- **Suivi des Versions & Gouvernance des Jalons Opérationnels** :
+  - Pilotage des 6 jalons opérationnels de release (Fin À faire, Fin En cours, Fin MR, Fin Recette, MEPP, MEP).
+  - Diagnostic d'anomalies en temps réel : alertes automatiques si un jalon est dépassé et que les statuts Jira des tickets ne sont pas conformes (non démarrés, retard de dév, MR ouverte, recette en cours, MEPP).
+  - Stepper visuel interactif, modale d'inspection des tickets avec filtres dédiés et intégration directe au calendrier des jalons du Dashboard.
 - **Tour de Contrôle & Tableaux de Bord** :
   - Visualisation en temps réel de l'adéquation charge / capacité (ETP nets vs charges planifiées).
   - Équilibre RUN vs BUILD (estimé vs réel extrait de Jira/Tempo).
   - Jalons de versionnage, gel de portefeuille et snapshots d'audit historiques.
+- **Administration & Portabilité des Données** :
+  - Export complet en 1 clic de toutes les collections MongoDB sous forme de snapshot JSON.
+  - Restauration et réinjection facilitée pour testeurs locaux avec prévisualisation et modes au choix (*Remplacer* ou *Fusionner*).
 
 ---
 

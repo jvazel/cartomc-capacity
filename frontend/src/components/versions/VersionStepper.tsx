@@ -41,7 +41,7 @@ export const VersionStepper: React.FC<VersionStepperProps> = ({ version, onEditC
       color: '#c084fc', // Purple
       glowColor: 'rgba(192, 132, 252, 0.4)',
       anomaliesCount: version.metrics.anomalies.retardMR,
-      anomalyText: `${version.metrics.anomalies.retardMR} MR ouverte(s)`
+      anomalyText: `${version.metrics.anomalies.retardMR} ticket(s) non mergé(s)`
     },
     {
       id: 'dateFinRecette',
@@ -51,7 +51,7 @@ export const VersionStepper: React.FC<VersionStepperProps> = ({ version, onEditC
       color: '#fb923c', // Orange
       glowColor: 'rgba(251, 146, 60, 0.4)',
       anomaliesCount: version.metrics.anomalies.retardRecette,
-      anomalyText: `${version.metrics.anomalies.retardRecette} recette(s) en retard`
+      anomalyText: `${version.metrics.anomalies.retardRecette} non validé(s)`
     },
     {
       id: 'dateMEPP',
@@ -60,8 +60,8 @@ export const VersionStepper: React.FC<VersionStepperProps> = ({ version, onEditC
       date: parseDate(version.dateMEPP),
       color: '#34d399', // Emerald
       glowColor: 'rgba(52, 211, 153, 0.4)',
-      anomaliesCount: 0,
-      anomalyText: ''
+      anomaliesCount: version.metrics.anomalies.retardMEPP || 0,
+      anomalyText: `${version.metrics.anomalies.retardMEPP || 0} non prêt(s)`
     },
     {
       id: 'dateMEP',
@@ -206,8 +206,9 @@ export const VersionStepper: React.FC<VersionStepperProps> = ({ version, onEditC
                     gap: '4px',
                     whiteSpace: 'nowrap'
                   }}
+                  title={step.anomalyText}
                 >
-                  <AlertTriangle size={11} /> {step.anomaliesCount} à décaler
+                  <AlertTriangle size={11} /> {step.anomalyText}
                 </div>
               )}
             </div>
